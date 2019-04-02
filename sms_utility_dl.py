@@ -1,12 +1,17 @@
 ################sms_utility_dl.py###############
+'''
+pip install --upgrade keras
+'''
 from keras.losses import *
 from keras.metrics import *
 from keras.models import *
 from keras.layers import *
 from keras.utils import *
+from keras.utils.training_utils import *
 from keras.preprocessing.text import *
 from keras.preprocessing.sequence import *
 import h5py
+import time
 
 from sms_utility_re import *
 from sms_utility_conll import *
@@ -15,7 +20,8 @@ from sms_utility_spark import *
 '''
 multi-class models
 '''
-def build_multiclass_model(positive_class_num = 1):
+def build_multiclass_model(positive_class_num = 1,\
+	gpus = None):
 	model = Sequential()
 	model.add(Embedding(input_dim = num_word_max,
 		output_dim = 300,
@@ -38,6 +44,8 @@ def build_multiclass_model(positive_class_num = 1):
 		activation='relu'))
 	model.add(Dense(positive_class_num+1, \
 		activation='softmax'))
+	if gpus is not None:
+		model = multi_gpu_model(model, gpus = gpus)
 	return model
 
 def train_multiclass_model(x_train, y_train, \
@@ -45,10 +53,12 @@ def train_multiclass_model(x_train, y_train, \
 	positive_weight = 1, \
 	model_file = 'temp_model.h5py', \
 	batch_size=500, \
-	epochs=3):
+	epochs=3,\
+	gpus = None):
 	if positive_class_num is None:
 		positive_class_num = y_train.shape[1]-1
-	model = build_multiclass_model(positive_class_num)
+	model = build_multiclass_model(positive_class_num,\
+		gpus = gpus)
 	model.compile(loss='categorical_crossentropy',
 		optimizer='adam', metrics=['accuracy'])
 	class_weight =  {0: 1}
@@ -66,6 +76,7 @@ def load_multiclass_model(model_file,\
 	model.load_weights(model_file)
 	model.compile(loss='categorical_crossentropy',
 		optimizer='adam', metrics=['accuracy'])
+	model._make_predict_function()
 	return model
 
 '''
@@ -74,7 +85,8 @@ entity models
 def build_entity_model(\
 	num_max_context_len = num_max_context_len,\
 	num_max_entity_len = num_max_name_len,\
-	include_entity_input = False):
+	include_entity_input = False,\
+	gpus = None):
 	###left context
 	input_left = Input(shape=(num_max_context_len, ))
 	emb_word_left = Dropout(0.3)(\
@@ -144,6 +156,8 @@ def build_entity_model(\
 	model = Model(\
 		inputs=input_layer,\
 		outputs=output)
+	if gpus is not None:
+		model = multi_gpu_model(model, gpus= gpus)
 	return model
 
 def train_entity_model(x_train, y_train, \
@@ -151,9 +165,11 @@ def train_entity_model(x_train, y_train, \
 	model_file = 'temp_model.h5py', \
 	batch_size=500, \
 	num_max_context_len = num_max_context_len,\
-	epochs=3):
+	gpus = None,\
+	epochs = 3):
 	model = build_entity_model(num_max_context_len \
-		= num_max_context_len)
+		= num_max_context_len,\
+		gpus = gpus)
 	model.compile(loss='categorical_crossentropy',
 		optimizer='adam', metrics=['accuracy'])
 	model.fit(x_train, y_train,
@@ -169,6 +185,7 @@ def load_entity_model(model_file,\
 	model.load_weights(model_file)
 	model.compile(loss='categorical_crossentropy',
 		optimizer='adam', metrics=['accuracy'])
+	model._make_predict_function()
 	return model
 
 '''
@@ -212,6 +229,7 @@ def dl_model_multiclass_train_from_json(
 	prediction_text = None,\
 	recommend_positive_num = 1000,\
 	epochs=3,\
+	gpus = None,\
 	sqlContext = None):
 	if sqlContext is None:
 		sqlContext = sqlContext_local
@@ -266,7 +284,8 @@ def dl_model_multiclass_train_from_json(
 	model = train_multiclass_model(x_train, y_train, \
 		positive_weight = weight_1, \
 		model_file = model_file,\
-		epochs=epochs)
+		epochs=epochs,\
+		gpus = gpus)
 	'''
 	SHOW THE PREDICTION RESULT
 	'''
@@ -510,7 +529,10 @@ def dl_model_entity_train_from_json(\
 	epochs = 3,\
 	num_max_context_len = num_max_context_len,\
 	recommend_positive_num = 1000,\
+	target_entity = None,\
+	gpus = None,\
 	sqlContext = None):
+	start = time.time()
 	if sqlContext is None:
 		sqlContext = sqlContext_local
 	print('load the input training data')
@@ -584,7 +606,11 @@ def dl_model_entity_train_from_json(\
 		positive_weight = weight_1, \
 		model_file = model_file,\
 		num_max_context_len = num_max_context_len,\
-		epochs=epochs)
+		epochs = epochs, \
+		gpus = gpus)
+	end = time.time()
+	print('training time:\t'+str(end - start)+' secondes')
+	start = time.time()
 	y_score = model.predict(x)
 	###
 	df = sqlContext.createDataFrame(\
@@ -666,7 +692,7 @@ def dl_model_entity_train_from_json(\
 			ORDER BY prediction1.score DESC
 			LIMIT """+str(recommend_positive_num))\
 		.withColumn('conll',\
-			udf(text_entity2conll,\
+			udf(lambda input: text_entity2conll(input, target_entity),\
 			StringType())('text_entity'))\
 			.registerTempTable('temp')
 		sqlContext.sql(u"""
@@ -677,6 +703,8 @@ def dl_model_entity_train_from_json(\
 		.options(header="false",sep="\n\n")\
 		.mode("append").save("temp")
 		os.system('cat temp/* > '+recommend_positive_conll_file)
+	end = time.time()
+	print('recommendation time:\t'+str(end - start)+' secondes')
 
 '''
 predict the category of entities in the text_entity
