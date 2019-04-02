@@ -1,6 +1,7 @@
 ######################sms_utility_spark.py######################
 import re
 import os
+import random
 import numpy as np
 from pyspark import *
 from pyspark.sql import *
@@ -1716,12 +1717,10 @@ def prepare_entity_dl_input(input_file,\
 		preprocessed_text_entity2context_idx(input),\
 		MapType(StringType(), ArrayType(IntegerType()))\
 		)('text_entity'))
-	os.system(u"""
-		rm -r output_df
-		hadoop fs -rm -r output_df
-		""")
-	output_df.write.json('output_df')
-	sqlContext.read.json('output_df')\
+	output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
+		.zfill(10)
+	output_df.write.json(output_df_temp)
+	sqlContext.read.json(output_df_temp)\
 		.registerTempTable('temp')
 	output_df = sqlContext.sql(u"""
 			SELECT *,
@@ -1734,17 +1733,15 @@ def prepare_entity_dl_input(input_file,\
 			""").drop('context_word_idx')
 	if output_file is not None:
 		print('saving results to '+output_file)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_file)
+		output_file_temp = 'temp'+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		output_df.write.json(output_file_temp)
+		os.system(u"hadoop fs -get "+output_file_temp+u" ./")
+		os.system(u"cat "+output_file_temp+u"/*> "+output_file)
 		os.system('hadoop fs -rm -r '+output_file)
-		os.system('hadoop fs -cp -f temp '+output_file)
+		os.system('hadoop fs -cp -f '+output_file_temp+' '+output_file)
 		print('results saved to '+output_file)
-	else:
-		return output_df
+		os.system(u"hadoop fs -rm -r "+output_file_temp)
+	os.system(u"hadoop fs -rm -r "+output_df_temp)
+	return output_df
 ######################sms_utility_spark.py######################	
