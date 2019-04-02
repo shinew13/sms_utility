@@ -1697,6 +1697,7 @@ def prepare_entity_dl_input(input_file,\
 		sqlContext = sqlContext_local
 	print('loading input data from '+input_file)
 	input_df = sqlContext.read.json(input_file)
+	print('loaed '+str(input_df.count())+' records from '+input_file)
 	if 'label' in input_df.columns:
 		print('prepare the input for dl entity model training')
 		output_df = input_df
