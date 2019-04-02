@@ -556,7 +556,7 @@ def text_entity_json2text_entity_comb_json(\
 		for entity_type in sub_entity_types:
 			output_df = output_df.withColumn('text_entity',\
 				udf(lambda input, entities:\
-				text_wildcard_entity_recovery(input, \
+				text_entity_wildcard_subentity_recovery(input, \
 				entities, \
 				entity_type))('text_entity', entity_type))
 	'''
@@ -772,7 +772,6 @@ imr
 dr
 
 from sms_utility_spark import *
-sqlContext = sqlContext_local
 
 text_context_json2text_context_entity_wildcard_json(\
 	input_json = 'input.json',\
@@ -860,6 +859,89 @@ def text_context_json2text_context_entity_wildcard_json(\
 		os.system(u"hadoop fs -rm -r "+output_json)
 		os.system(u"hadoop fs -cp -f temp "+output_json)
 		print('results saved to '+output_json)
+	return output_df
+
+
+'''
+replace the entities in the context of indicators
+
+usage:
+
+sudo rm input.csv
+sudo vi input.csv
+i _start_ this is jim working for pegasus
+_start_ this is [dr] working for pegasus my wife is jean
+
+sudo rm name1.csv 
+sudo vi name1.csv 
+ijim
+jean
+
+sudo rm orgnization1.csv 
+sudo vi orgnization1.csv 
+ipegasus
+
+input_csv = 'input.csv'
+output_csv = 'output.csv'
+
+entity_files = ['name1.csv', 'orgnization1.csv']
+entities = ['name', 'orgnization']
+
+indicator_csv2indicator_context_entity_wildcard_csv(\
+	entity_files,\
+	entities,\
+	input_csv = input_csv,\
+	output_csv = output_csv)
+'''
+def indicator_csv2indicator_context_entity_wildcard_csv(\
+	entity_files,\
+	entities,\
+	input_csv = None,\
+	input_df = None,\
+	output_csv = None,\
+	entity_nearby_merge = None,\
+	mathc_entity_by_word = None,\
+	sqlContext = None):
+	if sqlContext is None:
+		sqlContext = sqlContext_local
+	if input_csv is not None:
+		customSchema = StructType([\
+			StructField("text_entity", StringType(), True)])
+		input_df = sqlContext.read.format("csv")\
+			.option("header", "false")\
+			.schema(customSchema)\
+			.load(input_csv)\
+			.withColumn('text_entity',\
+			udf(lambda input: indicator_preprocess(input,\
+			ignore_space_at_start_and_end = \
+			False),\
+			StringType())\
+			('text_entity'))
+	input_df.cache()
+	outut_df = text_context_json2text_context_entity_wildcard_json(\
+		entity_files = entity_files,\
+		entities = entities,\
+		input_df = input_df,\
+		entity_nearby_merge = entity_nearby_merge,\
+		mathc_entity_by_word = mathc_entity_by_word,\
+		sqlContext = sqlContext)
+	outut_df = outut_df.withColumnRenamed('text_entity', 'indicator')\
+		.select('indicator')
+	outut_df.cache()
+	if output_csv is not None:
+		os.system(u"""
+			hadoop fs -rm -r temp
+			rm -r temp
+			""")
+		outut_df.write.format('csv')\
+			.option("header", "false")\
+			.save('temp')
+		os.system(u"""
+			hadoop fs -get temp ./
+			cat temp/* > """+output_csv)
+		os.system(u"hadoop fs -rm -r "+output_csv)
+		os.system(u"hadoop fs -cp -f temp "+output_csv)
+	return outut_df
 
 '''
 convert a text_entity to df, where each text_entity has only one
