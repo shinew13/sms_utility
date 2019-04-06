@@ -148,6 +148,137 @@ def load_entities(entity_file = None,\
 		in df_entity.select('entity').collect()]
 
 '''
+delete entities from a csv file according to another csv file
+
+usage:
+
+rm entity.csv
+vi entity.csv
+i
+jim
+wang
+yan
+
+rm entity_to_delete.csv
+vi entity_to_delete.csv
+i
+yan
+
+rm entity_to_add.csv
+vi entity_to_add.csv
+i
+liang
+
+hadoop fs -rm -r /data/jim/entity.csv
+hadoop fs -put /data/jim/entity.csv /data/jim/
+
+hadoop fs -rm -r /data/jim/entity_to_delete.csv
+hadoop fs -put /data/jim/entity_to_delete.csv /data/jim/
+
+hadoop fs -rm -r /data/jim/entity_to_add.csv
+hadoop fs -put /data/jim/entity_to_add.csv /data/jim/
+
+from sms_utility_spark import * 
+
+entity_csv_update(
+	entity_file_input = '/data/jim/entity.csv',
+	entity_file_to_delete = '/data/jim/entity_to_delete.csv',
+	entity_file_to_add = '/data/jim/entity_to_add.csv',
+	output_file_csv = '/data/jim/entity_new.csv',
+	sqlContext = sqlContext)
+
+entity_csv_update(
+	entity_file_input = '/data/jim/entity.csv',
+	entity_file_to_delete = '/data/jim/entity_to_delete.csv',
+	output_file_csv = '/data/jim/entity_new.csv',
+	sqlContext = sqlContext)
+
+entity_csv_update(
+	entity_file_input = '/data/jim/entity.csv',
+	entity_file_to_add = '/data/jim/entity_to_add.csv',
+	output_file_csv = '/data/jim/entity_new.csv',
+	sqlContext = sqlContext)
+'''
+def entity_csv_update(
+	entity_file_input,
+	entity_file_to_delete = None,
+	entity_file_to_add = None,
+	output_file_csv = None,
+	sqlContext = None):
+	if sqlContext is None:
+		sqlContext = sqlContext_local
+	###
+	entity_df = load_entities(
+		entity_file = entity_file_input,
+		return_format = 'df',
+		ignore_space_at_start_and_end = True,
+		sqlContext = sqlContext)
+	entity_df.cache()
+	entity_df.registerTempTable('entity_df')
+	###
+	if entity_file_to_add is not None:
+		entity_df_to_add = load_entities(
+			entity_file = entity_file_to_add,\
+			return_format = 'df',
+			ignore_space_at_start_and_end = True,
+			sqlContext = sqlContext)
+		entity_df_to_add.cache()
+		entity_df_to_add.registerTempTable('entity_df_to_add')
+		###
+		entity_temp = sqlContext.sql(u"""
+			SELECT DISTINCT * FROM (
+			SELECT * FROM entity_df
+			UNION ALL
+			SELECT * FROM entity_df_to_add
+			) AS temp
+			""")		
+	else:
+		entity_temp = sqlContext.sql(u"""
+			SELECT * FROM entity_df
+			""")	
+	entity_temp.registerTempTable('entity_temp')
+	entity_temp.cache()
+	###
+	if entity_file_to_delete is not None:
+		entity_df_to_delete = load_entities(
+			entity_file = entity_file_to_delete,\
+			return_format = 'df',
+			ignore_space_at_start_and_end = True,
+			sqlContext = sqlContext)
+		entity_df_to_delete.cache()
+		entity_df_to_delete.registerTempTable('entity_df_to_delete')
+		###
+		output_df = sqlContext.sql(u"""
+			SELECT entity_temp.*
+			FROM entity_temp
+			LEFT JOIN entity_df_to_delete
+			ON entity_df_to_delete.entity = 
+			entity_temp.entity
+			WHERE entity_df_to_delete.entity IS NULL
+			""")
+	else:
+		output_df = sqlContext.sql(u"""
+			SELECT entity_temp.*
+			FROM entity_temp
+			""")
+	output_df.cache()
+	####
+	if output_file_csv is not None:
+		print(u"saving results to "+output_file_csv)
+		output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		os.system(u"hadoop fs -rm -r "+output_df_temp)
+		os.system(u"rm -r "+output_df_temp)
+		output_df.write.format('csv').save(output_df_temp)
+		os.system(u"hadoop fs -get "+output_df_temp+" ./")
+		os.system(u"cat "+output_df_temp+"/* > "+output_file_csv)
+		os.system(u"hadoop fs -rm -r "+output_file_csv)
+		os.system(u"hadoop fs -cp -f "+output_df_temp+u" "+output_file_csv)
+		os.system(u"hadoop fs -rm -r "+output_df_temp)
+		os.system(u"rm -r "+output_df_temp)
+	return output_df
+
+'''
 map a title csv tile to a relation datatframe
 
 rm titles.csv
