@@ -2,7 +2,6 @@
 import re
 import os
 import random
-import numpy as np
 from pyspark import *
 from pyspark.sql import *
 from pyspark.sql.types import *
@@ -142,7 +141,7 @@ hadoop fs -put /data/jim/entity_to_add.csv /data/jim/
 
 from sms_utility_spark import * 
 
-entity_csv_update(
+entity_csv_update(\
 	entity_file_input = '/data/jim/entity.csv',
 	entity_file_to_delete = '/data/jim/entity_to_delete.csv',
 	entity_file_to_add = '/data/jim/entity_to_add.csv',
