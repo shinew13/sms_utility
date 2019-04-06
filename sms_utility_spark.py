@@ -110,7 +110,7 @@ def load_entities(entity_file = None,\
 		in df_entity.select('entity').collect()]
 
 '''
-delete entities from a csv file according to another csv file
+updating entities from a csv file of adding/deleting
 
 usage:
 
@@ -161,8 +161,7 @@ entity_csv_update(
 	output_file_csv = '/data/jim/entity_new.csv',
 	sqlContext = sqlContext)
 '''
-def entity_csv_update(
-	entity_file_input,
+def entity_csv_update(entity_file_input,
 	entity_file_to_delete = None,
 	entity_file_to_add = None,
 	output_file_csv = None,
