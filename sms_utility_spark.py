@@ -18,44 +18,6 @@ except:
 	pass
 
 '''
-usage: 
-
-text_json2text_entity_re_json(\
-	input_json = '/data/jim/sms_business.json',\
-	output_json = '/data/jim/clinic_dr_name.json',\
-	entity_extract_re_funcs = [extract_dr_name],\
-	enitty_names = ['dr_name'])
-'''
-def text_json2text_entity_re_json(input_json,\
-	output_json,\
-	entity_extract_re_funcs,\
-	enitty_names,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	print('loading data from '+input_json)
-	output_df = sqlContext.read.json(input_json)
-	print('extracging entities from sms')
-	for func, entity_name \
-		in zip(entity_extract_re_funcs, enitty_names):
-		print('extracting entities by '+str(func))
-		output_df = output_df.withColumn(entity_name,\
-			udf(func, \
-			StringType())('text'))
-		output_df.cache()
-	print('saving results to '+output_json)
-	os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-	output_df.write.json('temp')
-	os.system(u"""
-		hadoop fs -get temp ./
-		cat temp/* > """+output_json)
-	os.system(u'hadoop fs -rm -r '+output_json)
-	os.system(u'hadoop fs -mv temp '+output_json)
-
-'''
 load entities/indicators from a csv file
 
 usage
@@ -327,6 +289,44 @@ def title_csv2title_relation_df(input_file,\
 			NULL AS relation_reverse
 			FROM temp
 			""")
+
+'''
+usage: 
+
+text_json2text_entity_re_json(\
+	input_json = '/data/jim/sms_business.json',\
+	output_json = '/data/jim/clinic_dr_name.json',\
+	entity_extract_re_funcs = [extract_dr_name],\
+	enitty_names = ['dr_name'])
+'''
+def text_json2text_entity_re_json(input_json,\
+	output_json,\
+	entity_extract_re_funcs,\
+	enitty_names,\
+	sqlContext = None):
+	if sqlContext is None:
+		sqlContext = sqlContext_local
+	print('loading data from '+input_json)
+	output_df = sqlContext.read.json(input_json)
+	print('extracging entities from sms')
+	for func, entity_name \
+		in zip(entity_extract_re_funcs, enitty_names):
+		print('extracting entities by '+str(func))
+		output_df = output_df.withColumn(entity_name,\
+			udf(func, \
+			StringType())('text'))
+		output_df.cache()
+	print('saving results to '+output_json)
+	os.system(u"""
+		hadoop fs -rm -r temp
+		rm -r temp
+		""")
+	output_df.write.json('temp')
+	os.system(u"""
+		hadoop fs -get temp ./
+		cat temp/* > """+output_json)
+	os.system(u'hadoop fs -rm -r '+output_json)
+	os.system(u'hadoop fs -mv temp '+output_json)
 
 '''
 extract entities from a dataframe of text
