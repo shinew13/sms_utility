@@ -289,6 +289,59 @@ def title_csv2title_relation_df(input_file,\
 			""")
 
 '''
+convert text to text with wild patterns of re
+usage:
+
+sudo rm input.json
+sudo vi input.json
+i{'text':' this ia an email jingx@gmgn.com 24r&234 P00 '}
+
+hadoop fs -rm -r input.json
+hadoop fs -put input.json ./
+
+text_json2text_wild_json(
+	input_json = 'input.json',
+	output_json = 'output.json',
+	re_funs = [text2text_email],
+	entities = ['email'],
+	sqlContext = sqlContext)
+
+'''
+def text_json2text_wild_json(
+	re_funs,
+	entities,
+	input_json = None,
+	input_df = None,
+	output_json = None,
+	sqlContext = None):
+	if sqlContext is None:
+		sqlContext = sqlContext_local
+	if input_json is not None:
+		input_df = sqlContext.read.json(input_json)
+	print('loaded '+str(input_df.count())+' records from '+input_json)
+	output_df = input_df
+	for entity, re_funs in zip(entities, re_funs):
+		output_df = output_df.withColumn('text', \
+			udf(re_funs, StringType())('text'))
+		output_df = output_df.withColumn('text', \
+			udf(lambda input: \
+			text_entity2text_entity_wildcard(\
+			input,\
+			entity_wildcard = entity),\
+			StringType())('text'))
+		output_df.cache()
+	if output_json is not None:
+		print('saving results to '+output_json)
+		output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		output_df.write.json(output_df_temp)
+		os.system(u"hadoop fs -get "+output_df_temp+u" ./")
+		os.system(u"cat ./"+output_df_temp+u"/* > "+output_json)
+		os.system(u"hadoop fs -cp -f "+output_df_temp+u" "+output_json)
+		os.system(u"hadoop fs -rm -r "+output_df_temp)
+	return output_df
+
+'''
 usage: 
 
 text_json2text_entity_re_json(\
