@@ -1821,6 +1821,7 @@ prepare_entity_dl_input('input.json',\
 '''
 def prepare_entity_dl_input(input_file,\
 	output_file = None,\
+	negative_number = None,\
 	sqlContext = None):
 	if sqlContext is None:
 		sqlContext = sqlContext_local
@@ -1830,6 +1831,16 @@ def prepare_entity_dl_input(input_file,\
 	if 'label' in input_df.columns:
 		print('prepare the input for dl entity model training')
 		output_df = input_df
+		if negative_number is not None:
+			output_df.registerTempTable('output_df')
+			output_df = sqlContext.sql(u"""
+				SELECT * FROM output_df
+				WHERE label != 0
+				UNION ALL 
+				SELECT * FROM output_df
+				WHERE label = 0
+				LIMIT """+str(negative_number))
+			output_df.cache()
 	else:
 		print('prepare the input for dl entity model prediction')
 		output_df = text_entity2text_single_entity(input_df,\
@@ -1874,4 +1885,5 @@ def prepare_entity_dl_input(input_file,\
 		os.system(u"hadoop fs -rm -r "+output_file_temp)
 	os.system(u"hadoop fs -rm -r "+output_df_temp)
 	return output_df
+
 ######################sms_utility_spark.py######################	
