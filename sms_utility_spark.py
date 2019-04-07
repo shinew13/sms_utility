@@ -307,8 +307,7 @@ text_json2text_wild_json(
 	sqlContext = sqlContext)
 
 '''
-def text_json2text_wild_json(
-	re_funs,
+def text_json2text_wild_json(re_funs,
 	entities,
 	input_json = None,
 	input_df = None,
