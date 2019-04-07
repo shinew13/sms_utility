@@ -68,11 +68,12 @@ text_preprocess(u"6438 eamgn@gex.com ",
 	ignore_number = False)
 
 '''
-def text_preprocess(input, \
+def text_preprocess(input,\
 	ignore_puntuation = False,\
 	ignore_number = False,\
 	ignore_linebreak = True,\
 	ignore_email = True,\
+	irgnore_start_end_space = False,\
 	seperate_arabic_ending = False):
 	try:
 		input = input.strip()
@@ -84,8 +85,11 @@ def text_preprocess(input, \
 			input = re.sub(regex_email, ' _email_ ', input)
 		if ignore_puntuation is False:
 			input = re.sub(re_arabic_putuation, ' _puntuation_ ', input)
-		input = re.sub(re_arabic_non_letter, ' ', input)
-		input = ' _start_ '+ input.strip().lower() +' _end_ '
+		input = re.sub(re_arabic_non_letter, ' ', input)		
+		if irgnore_start_end_space is True:
+			input = ' '+ input.strip().lower() +' '
+		else:
+			input = ' _start_ '+ input.strip().lower() +' _end_ '
 		'''
 		seperate the arabic ending from the work, inserting a space between
 		the word and the ending
