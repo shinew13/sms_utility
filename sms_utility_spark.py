@@ -619,7 +619,7 @@ def text_entity_json2text_entity_comb_json(\
 	sub_entity_files_funcs = None,\
 	sub_entity_types = None,\
 	sub_entity_indicator_match_by_word = None,\
-	sub_entity_type_repalce_by_wildcard = False,\
+	sub_entity_type_repalce_by_wildcard = None,\
 	input_json = None,\
 	input_df = None,\
 	output_json = None,\
@@ -681,14 +681,16 @@ def text_entity_json2text_entity_comb_json(\
 	'''
 	3. recover the sub entities
 	'''
-	if sub_entity_type_repalce_by_wildcard is False:
+	if sub_entity_type_repalce_by_wildcard is not None:
 		print('recover the sub entities in the comb entity')
-		for entity_type in sub_entity_types:
-			output_df = output_df.withColumn('text_entity',\
-				udf(lambda input, entities:\
-				text_entity_wildcard_subentity_recovery(input, \
-				entities, \
-				entity_type))('text_entity', entity_type))
+		for entity_type, replace_indicator in zip(sub_entity_types,\
+			sub_entity_type_repalce_by_wildcard):
+			if replace_indicator is not True:
+				output_df = output_df.withColumn('text_entity',\
+					udf(lambda input, entities:\
+					text_entity_wildcard_subentity_recovery(input, \
+					entities, \
+					entity_type))('text_entity', entity_type))
 	'''
 	4. recover the comb_entities
 	'''
