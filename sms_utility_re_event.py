@@ -1411,13 +1411,13 @@ def document_transfer_to_sender(input):
 
 '''
 document_trassfer_to_email
-'''
-re_email = r'(email|email id|personal email|email address|email add|mail)'
 
+usage:
+
+input = u' send your cv to _puntuation_ _entity_ '
+print(document_transfer_to_email(input))
 '''
-	r' '+re_document+r' '\
-	+r'('+re_from+r' '+re_me+r' )*'\
-'''
+re_email = r'(email ad|bank email id|id|email|email id|personal email|email address|email add|mail)'
 
 re_document_transfer_to_email1 = \
 	r' '+re_to+r' '\
@@ -1426,8 +1426,15 @@ re_document_transfer_to_email1 = \
 	+r'(_puntuation_ )*'\
 	+r'_entity_ '
 
+re_document_transfer_to_email2 = \
+	r' '+re_document+r' '\
+	+re_to+r' '\
+	+r'(_puntuation_ )*'\
+	+r'_entity_ '
+
 re_document_transfer_to_email = [\
-	re_document_transfer_to_email1\
+	re_document_transfer_to_email1,\
+	re_document_transfer_to_email2
 	]
 
 def document_transfer_to_email(input):
