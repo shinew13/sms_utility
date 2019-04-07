@@ -735,7 +735,7 @@ def text_entity_json2text_entity_comb_json(\
 	'''
 	if sub_entity_type_repalce_by_wildcard is not True:
 		print('recover the sub entities in the comb entity')
-		for entity_type, in sub_entity_types:
+		for entity_type in sub_entity_types:
 			output_df = output_df.withColumn('text_entity',\
 				udf(lambda input, entities:\
 				text_entity_wildcard_subentity_recovery(input, \
