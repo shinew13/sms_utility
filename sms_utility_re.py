@@ -933,7 +933,7 @@ extract emails from text and put the into blackets
 
 usage:
 
-input =  'my email is jywang.ieee@gmail.com but [ my company ] email is jingya.wang@pegassu.ae.   '
+input =  '978:887 my email is jywang.ieee@gmail.com but [ my company ] email is jingya.wang@pegassu.ae.   '
 print text2text_email(input)
 '''
 def extract_email(input):
