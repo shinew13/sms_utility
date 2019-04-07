@@ -1425,14 +1425,14 @@ re_document_transfer_to_email1 = \
 	+r'('+re_email+r' )*'\
 	+r'(please )*'\
 	+r'(_puntuation_ )*'\
-	+r'(_email_ )*'\
+	+r'(_email_ (and )*(_puntuation_ )*)*'\
 	+r'_entity_ '
 
 re_document_transfer_to_email2 = \
 	r' '+re_document+r' '\
 	+re_to+r' '\
 	+r'(_puntuation_ )*'\
-	+r'(_email_ )*'\
+	+r'(_email_ (and )*(_puntuation_ )*)*'\
 	+r'_entity_ '
 
 re_document_transfer_to_email = [\
