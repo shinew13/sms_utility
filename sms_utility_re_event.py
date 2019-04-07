@@ -1414,15 +1414,16 @@ document_trassfer_to_email
 
 usage:
 
-input = u' send your cv to _puntuation_ _entity_ '
+input = u' to this mail address _entity_ '
 print(document_transfer_to_email(input))
 '''
-re_email = r'(email ad|bank email id|id|email|email id|personal email|email address|email add|mail)'
+re_email = r'(mail address|email ad|bank email id|id|email|email id|personal email|email address|email add|mail)'
 
 re_document_transfer_to_email1 = \
 	r' '+re_to+r' '\
 	+r'('+re_my+r'|'+re_your+r'|'+re_the+r' )*'\
 	+r'('+re_email+r' )*'\
+	+r'(please )*'\
 	+r'(_puntuation_ )*'\
 	+r'_entity_ '
 
