@@ -11,6 +11,9 @@ re_arabic_number = u'[\d\u0660-\u0669\u06F0-\u06F9]+(([\.\,\:\-\\\/\u066A-\u066C
 re_arabic_putuation = u'[\u060C-\u060F\u061F\u066D\u06DD\u06DE\u06E9\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@]+'
 re_arabic_non_letter = u'[^\u0600-\u06FF\u0750-\u077f\w]+'
 re_newline = u'([\n\r]\s*)'
+regex_email = re.compile(("([A-z0-9!#$%&*+\/=?^_`{|}~-]+(?:\.[A-z0-9!#$%&'*+\/=?^_`"
+	"{|}~-]+)*(@)(?:[A-z0-9](?:[A-z0-9-]*[A-z0-9])?(\.|"
+	"\sdot\s))+[A-z0-9](?:[A-z0-9-]*[A-z0-9])?)"))
 
 #https://blog.csdn.net/chivalrousli/article/details/77412329
 re_chinese_letter = u'[\u4E00-\u9FA5\u9FA6-\u9FEF]'
@@ -59,11 +62,17 @@ text_preprocess(u"\u0623\u064a\u0646 \u0646\u0661\u0662\u0663 \u0627\u0644\u0645
 text_preprocess(u"\u0623\u0628\u064a \u0648\u0623\u0645\u0643 \u0642\u0627\u062f\u0645")
 
 text_preprocess(u"\u0627\u0628\u064a")
+
+text_preprocess(u"6438 eamgn@gex.com ",
+	ignore_email = False,
+	ignore_number = False)
+
 '''
 def text_preprocess(input, \
 	ignore_puntuation = False,\
 	ignore_number = False,\
 	ignore_linebreak = True,\
+	ignore_email = True,\
 	seperate_arabic_ending = False):
 	try:
 		input = input.strip()
@@ -71,6 +80,8 @@ def text_preprocess(input, \
 			input = re.sub(re_arabic_number, ' _number_ ', input)
 		if ignore_linebreak is False:
 			input = re.sub(re_newline, ' _linebreak_ ', input)
+		if ignore_email is False:
+			input = re.sub(regex_email, ' _email_ ', input)
 		if ignore_puntuation is False:
 			input = re.sub(re_arabic_putuation, ' _puntuation_ ', input)
 		input = re.sub(re_arabic_non_letter, ' ', input)
@@ -901,6 +912,8 @@ extract number from text
 
 usage:
 
+from sms_utility_re import *
+
 text_preprocess(extract_number('10-10 -100 12.12.13/45/78/44 12, 12.0'))
 
 extract_date_number('10-10 -100 12.12.13/45/78/44 12, 12.0')
@@ -919,10 +932,9 @@ usage:
 input =  'my email is jywang.ieee@gmail.com but [ my company ] email is jingya.wang@pegassu.ae.   '
 print text2text_email(input)
 '''
-
-regex_email = re.compile(("([A-z0-9!#$%&*+\/=?^_`{|}~-]+(?:\.[A-z0-9!#$%&'*+\/=?^_`"
-	"{|}~-]+)*(@)(?:[A-z0-9](?:[A-z0-9-]*[A-z0-9])?(\.|"
-	"\sdot\s))+[A-z0-9](?:[A-z0-9-]*[A-z0-9])?)"))
+def extract_email(input):
+	return extract_entity_by_re(input, \
+		regex_email)
 
 def text2text_email(input):
 	return extract_entity_by_re(input, \
