@@ -299,6 +299,8 @@ i{'text':' this ia an email jingx@gmgn.com 24r&234 P00 '}
 hadoop fs -rm -r input.json
 hadoop fs -put input.json ./
 
+from sms_utility_spark import *
+
 text_json2text_entity_wild_re_json(
 	input_json = 'input.json',
 	output_json = 'output.json',
@@ -321,7 +323,7 @@ def text_json2text_entity_wild_re_json(input_json,
 		output_df = output_df.withColumn('text',
 			udf(lambda input: re.sub(entity_re,\
 			' _'+entity_name+'_ ',\
-			StringType()))('text'))
+			input), StringType())('text'))
 		output_df.cache()
 	print('saving results to '+output_json)
 	os.system(u"""
