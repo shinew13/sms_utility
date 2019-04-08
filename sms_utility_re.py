@@ -63,7 +63,7 @@ text_preprocess(u"\u0623\u0628\u064a \u0648\u0623\u0645\u0643 \u0642\u0627\u062f
 
 text_preprocess(u"\u0627\u0628\u064a")
 
-text_preprocess(u"6438 eamgn@gex.com ",
+text_preprocess(u"6438 eam999.gn@gex.com ",
 	ignore_email = False,
 	ignore_number = False)
 
@@ -73,20 +73,20 @@ def text_preprocess(input,\
 	ignore_number = False,\
 	ignore_linebreak = True,\
 	ignore_email = True,\
-	irgnore_start_end_space = False,\
+	ignore_start_end_space_indicator = False,\
 	seperate_arabic_ending = False):
 	try:
 		input = input.strip()
+		if ignore_email is False:
+			input = re.sub(regex_email, ' _email_ ', input)
 		if ignore_number is False:
 			input = re.sub(re_arabic_number, ' _number_ ', input)
 		if ignore_linebreak is False:
 			input = re.sub(re_newline, ' _linebreak_ ', input)
-		if ignore_email is False:
-			input = re.sub(regex_email, ' _email_ ', input)
 		if ignore_puntuation is False:
 			input = re.sub(re_arabic_putuation, ' _puntuation_ ', input)
 		input = re.sub(re_arabic_non_letter, ' ', input)		
-		if irgnore_start_end_space is True:
+		if ignore_start_end_space_indicator is True:
 			input = ' '+ input.strip().lower() +' '
 		else:
 			input = ' _start_ '+ input.strip().lower() +' _end_ '
