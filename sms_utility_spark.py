@@ -301,30 +301,38 @@ hadoop fs -put input.json ./
 
 from sms_utility_spark import *
 
-text_json2text_entity_wild_re_json(
+text_json2text_entity_wildcard_re_json(
 	input_json = 'input.json',
 	output_json = 'output.json',
-	entity_res = [re_arabic_number, regex_email],
-	enitty_names = ['number', 'email'])
+	entity_fun_res = [text2text_email, extract_number],
+	enitty_names = ['email', 'number'],
+	sqlContext = sqlContext)
 '''
-def text_json2text_entity_wild_re_json(input_json,
+def text_json2text_entity_wildcard_re_json(input_json,
 	output_json,
-	entity_res,
+	entity_fun_res,
 	enitty_names,
 	sqlContext = None):
 	if sqlContext is None:
 		sqlContext = sqlContext_local
 	print('loading data from '+input_json)
 	output_df = sqlContext.read.json(input_json)
-	print('extracging entities from sms')
-	for entity_re, entity_name \
-		in zip(entity_res, enitty_names):
-		print('extracting entities of '+entity_name)
+	output_df = output_df.withColumn('text_entity', udf(lambda input: input, \
+		StringType())('text'))
+	for entity_fun_re, entity_name \
+		in zip(entity_fun_res, enitty_names):
+		print('extracting entities by '+str(entity_fun_re))
 		output_df = output_df.withColumn('text_entity',
-			udf(lambda input: re.sub(entity_re,\
-			' _'+entity_name+'_ ',\
-			input), StringType())('text'))
-		output_df.cache()
+			udf(entity_fun_re, StringType())('text_entity'))
+		output_df = output_df.withColumn(entity_name,
+			udf(text_entity2entities, ArrayType(StringType()))('text_entity'))
+		output_df = output_df.withColumn('text_entity',
+			udf(lambda input: \
+			text_entity2text_entity_wildcard(input, entity_name), \
+			StringType())('text_entity'))
+	output_df = output_df.withColumn('text_entity',
+		udf(text_preprocess, StringType())('text_entity'))
+	output_df.cache()
 	print('saving results to '+output_json)
 	os.system(u"""
 		hadoop fs -rm -r temp
@@ -1633,14 +1641,12 @@ def text_entity2text_entity_context_indicator(\
 		output_df.write.json(output_file_temp)
 		os.system(u"hadoop fs -get "+output_file_temp+u" ./")
 		os.system(u"cat "+output_file_temp+u"/*> "+output_json)
-		os.system('hadoop fs -rm -r '+output_file)
+		os.system('hadoop fs -rm -r '+output_json)
 		os.system('hadoop fs -cp -f '+output_file_temp+' '+output_json)
 		print('results saved to '+output_json)
 		os.system(u"hadoop fs -rm -r "+output_file_temp)
 	else:
 		return output_df
-
-
 
 '''
 extract data/time entities from texts
