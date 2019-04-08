@@ -29,6 +29,7 @@ def knowledge_graph_json2entity_profile_json(\
 	output_json,\
 	subject_name,\
 	object_name,\
+	target_entity_name,\
 	relation = None,\
 	sqlContext = None):
 	if sqlContext is None:
@@ -51,9 +52,13 @@ def knowledge_graph_json2entity_profile_json(\
 			object AS  """+object_name+u"""
 			FROM knowledge_graph_fb
 			""")
-	output_df = output_df.groupby(subject_name)\
+	if subject_name == target_entity_name:
+		group_entity_name = object_name
+	else:
+		group_entity_name = subject_name
+	output_df = output_df.groupby(target_entity_name)\
 		.agg(\
-		collect_list(object_name).alias(object_name)
+		collect_list(group_entity_name).alias(group_entity_name)
 		).write.json(output_df_temp)
 	os.system('cat '+output_df_temp+'/* > '+output_json)
 	os.system('rm -r '+output_df_temp)
