@@ -63,9 +63,12 @@ text_preprocess(u"\u0623\u0628\u064a \u0648\u0623\u0645\u0643 \u0642\u0627\u062f
 
 text_preprocess(u"\u0627\u0628\u064a")
 
-text_preprocess(u"6438 eam999.gn@gex.com ",
+text_preprocess(u"6438 eam999.gn@gex.com _number_ and _email_",
 	ignore_email = False,
 	ignore_number = False)
+
+text_preprocess(u"this xg_gex@324.com is 888:888 a _number_ and _,_ is a _email_ ",\
+	ignore_email = False)
 
 '''
 def text_preprocess(input,\
@@ -74,6 +77,7 @@ def text_preprocess(input,\
 	ignore_linebreak = True,\
 	ignore_email = True,\
 	ignore_start_end_space_indicator = False,\
+	scape_entity = False,\
 	seperate_arabic_ending = False):
 	try:
 		input = input.strip()
@@ -85,7 +89,7 @@ def text_preprocess(input,\
 			input = re.sub(re_newline, ' _linebreak_ ', input)
 		if ignore_puntuation is False:
 			input = re.sub(re_arabic_putuation, ' _puntuation_ ', input)
-		input = re.sub(re_arabic_non_letter, ' ', input)		
+		input = re.sub(re_arabic_non_letter, ' ', input)
 		if ignore_start_end_space_indicator is True:
 			input = ' '+ input.strip().lower() +' '
 		else:
@@ -108,6 +112,15 @@ def text_preprocess(input,\
 		return input
 	except:
 		return None
+
+'''
+if scape_entity is False:				
+else:
+	for sub_text in re.split('_[a-z]{1,}_', input):
+		sub_text1 = re.sub(re_arabic_putuation, \
+			' _puntuation_ ', sub_text)
+		input = re.sub(sub_text, sub_text1, input)
+'''
 
 '''
 usage:
