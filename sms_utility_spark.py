@@ -1626,20 +1626,21 @@ def text_entity2text_entity_context_indicator(\
 			'entity',\
 			with_bracket = True))('text_entity', 'entity'))
 	output_df.cache()
-	if output_json is not None:
+	if output_json is not None:		
 		print('saving results to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
-		os.system('hadoop fs -rm -r '+output_json)
-		os.system('hadoop fs -mv temp '+output_json)
+		output_file_temp = 'temp'+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		output_df.write.json(output_file_temp)
+		os.system(u"hadoop fs -get "+output_file_temp+u" ./")
+		os.system(u"cat "+output_file_temp+u"/*> "+output_json)
+		os.system('hadoop fs -rm -r '+output_file)
+		os.system('hadoop fs -cp -f '+output_file_temp+' '+output_json)
+		print('results saved to '+output_json)
+		os.system(u"hadoop fs -rm -r "+output_file_temp)
 	else:
 		return output_df
+
+
 
 '''
 extract data/time entities from texts
