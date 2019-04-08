@@ -1,1946 +1,1070 @@
-######################sms_utility_spark.py######################
+################sms_utility_re.py################
 import re
-import os
-import random
-from pyspark import *
-from pyspark.sql import *
-from pyspark.sql.types import *
-from pyspark.sql.functions import *
+from hashlib import md5
+from collections import *
+
+#https://en.wikipedia.org/wiki/List_of_Unicode_characters
+#https://en.wikipedia.org/wiki/Arabic_script_in_Unicode
+re_puntuation = r"(\!|\"|\#|\$|\%|\&|\'|\(|\)|\*|\+|\,|\-|\.|\/|\:|\;|\<|\=|\>|\?|\@)+"
+
+re_arabic_number = u'[\d\u0660-\u0669\u06F0-\u06F9]+(([\.\,\:\-\\\/\u066A-\u066C][\d\u0660-\u0669\u06F0-\u06F9]+)+)?'
+re_arabic_putuation = u'[\u060C-\u060F\u061F\u066D\u06DD\u06DE\u06E9\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@]+'
+re_arabic_non_letter = u'[^\u0600-\u06FF\u0750-\u077f\w]+'
+re_newline = u'([\n\r]\s*)'
+regex_email = re.compile(("([A-z0-9!#$%&*+\/=?^_`{|}~-]+(?:\.[A-z0-9!#$%&'*+\/=?^_`"
+	"{|}~-]+)*(@)(?:[A-z0-9](?:[A-z0-9-]*[A-z0-9])?(\.|"
+	"\sdot\s))+[A-z0-9](?:[A-z0-9-]*[A-z0-9])?)"))
+
+#https://blog.csdn.net/chivalrousli/article/details/77412329
+re_chinese_letter = u'[\u4E00-\u9FA5\u9FA6-\u9FEF]'
+re_chinese_puntutation = u'[\u3000-\u303F\uFF00-\uFFEF]'
+
+#https://arabic.desert-sky.net/g_pronouns_poss.html
+re_end_my = u'(\u064a)'
+re_end_our = u'(\u0646\u0627)'
+#
+re_end_your = u'(\u0643|\u0643\u0645\u0627|\u0643\u0648|\u0643\u0645)'
+re_end_your_male = u'(\u0643\u064e|\u0643\u0645)'
+re_end_your_female = u'(\u0643\u0650|\u0643\u0646)'
+#
+re_end_his = u'(\u0647)'
+re_end_her = u'(\u0647\u0627)'
+re_end_their = u'(\u0647\u0645\u0627|\u0647\u0645|\u0647\u0646)'
+
+re_arabic_end_all = r'('+re_end_my\
+	+ r'|' + re_end_our\
+	+ r'|' + re_end_your\
+	+ r'|' + re_end_your_male\
+	+ r'|' + re_end_your_female\
+	+ r'|' + re_end_his\
+	+ r'|' + re_end_her\
+	+ r'|' + re_end_their\
+	+r')'
+
+num_max_text_len = 50
+num_max_context_len = 6
+num_max_name_len = 3
+num_word_max = 200000
+
+'''
+usage:
 
 from sms_utility_re import *
 
-try:
-	sc = SparkContext("local", "sms_utility_spark")
-	sqlContext_local = SparkSession.builder.getOrCreate()
-	print('created sqlContext_local')
-except:
-	pass
+text_preprocess('I live at abu Dhabi, and you? my numbrer is 24389 ok\n \n hahah \n\n it is ok \n\n ',\
+ignore_linebreak = False)
+
+text_preprocess('this is 823.894289')
+text_preprocess('ok 378 439 384758 jktne')
+
+text_preprocess(u"\u0623\u064a\u0646 \u0646\u0661\u0662\u0663 \u0627\u0644\u0645\u062f\u064a\u0631\u061f")
+
+text_preprocess(u"\u0623\u0628\u064a \u0648\u0623\u0645\u0643 \u0642\u0627\u062f\u0645")
+
+text_preprocess(u"\u0627\u0628\u064a")
+
+text_preprocess(u"6438 eam999.gn@gex.com _number_ and _email_",
+	ignore_email = False,
+	ignore_number = False)
+
+text_preprocess(u"this xg_gex@324.com is 888:888 a _number_ and _,_ is a _email_ ",\
+	ignore_email = False)
 
 '''
-load entities/indicators from a csv file
+def text_preprocess(input,\
+	ignore_puntuation = False,\
+	ignore_number = False,\
+	ignore_linebreak = True,\
+	ignore_email = True,\
+	ignore_start_end_space_indicator = False,\
+	scape_entity = False,\
+	seperate_arabic_ending = False):
+	try:
+		input = input.strip()
+		if ignore_email is False:
+			input = re.sub(regex_email, ' _email_ ', input)
+		if ignore_number is False:
+			input = re.sub(re_arabic_number, ' _number_ ', input)
+		if ignore_linebreak is False:
+			input = re.sub(re_newline, ' _linebreak_ ', input)
+		if ignore_puntuation is False:
+			input = re.sub(re_arabic_putuation, ' _puntuation_ ', input)
+		input = re.sub(re_arabic_non_letter, ' ', input)
+		if ignore_start_end_space_indicator is True:
+			input = ' '+ input.strip().lower() +' '
+		else:
+			input = ' _start_ '+ input.strip().lower() +' _end_ '
+		'''
+		seperate the arabic ending from the work, inserting a space between
+		the word and the ending
+		'''
+		if seperate_arabic_ending is True:
+			word_with_ending = [r' ' + word.group() 
+				for word \
+				in re.finditer(\
+				r'[^ ]{2,}'+re_arabic_end_all+r' ', \
+				input)]
+			for word in word_with_ending:
+				word_old = word
+				ending = re.search(re_arabic_end_all+r' ', word).group()
+				word_new = re.sub(re.escape(ending), r' '+ending, word_old)
+				input = re.sub(re.escape(word_old), word_new, input)
+		return input
+	except:
+		return None
 
-usage
+'''
+if scape_entity is False:				
+else:
+	for sub_text in re.split('_[a-z]{1,}_', input):
+		sub_text1 = re.sub(re_arabic_putuation, \
+			' _puntuation_ ', sub_text)
+		input = re.sub(sub_text, sub_text1, input)
+'''
 
-rm entities.csv
-vi entities.csv
-i wang
-jingyan
-456 ewn
-
-you can also put arabic in to the csv file
-
-hadoop fs -rm -r entities.csv
-hadoop fs -put entities.csv ./
-
-from sms_utility_spark import *
-
-load_entities('indicator.csv',\
-	return_format = 'df')\
-	.show()
-
-print load_entities('entities.csv',\
-	return_format = 'list',\
-	ignore_space_at_start_and_end = True)
-
+'''
 usage:
 
-rm entities.json
-vi entities.json
-i{"entity":"wang"}
-{"entity":"\u0627\u0628\u0646\u064a"}
+indicator_preprocess('Abu Dhabi')
 
-hadoop fs -rm -r entities.json
-hadoop fs -put entities.json ./
+indicator_preprocess(u"\u0623\u0628\u0648 \u0638\u0628\u064a")
+indicator_preprocess(u"yal&ccedil;in")
 
-from sms_utility_spark import *
+indicator_preprocess(u"\u0632\u0648\u062c\u064a\u0647")
 
-load_entities(\
-	entity_file = 'entities.json',\
-	return_format = 'df')\
-	.show()
-
-print load_entities('entities.json',\
-	return_format = 'list',\
-	ignore_space_at_start_and_end = True)
 '''
-def load_entities(entity_file = None,\
-	return_format = 'df',\
+def indicator_preprocess(indicator, \
+	ignore_puntuation = False,\
 	ignore_space_at_start_and_end = False,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if entity_file.split('.')[-1] == 'csv':
-		print('loading the entities from '+entity_file)
-		customSchema = StructType([\
-			StructField("entity", StringType(), True)])
-		sqlContext.read.format("csv")\
-			.option("header", "false")\
-			.schema(customSchema)\
-			.load(entity_file)\
-			.withColumn('entity',\
-			udf(lambda input: indicator_preprocess(input,\
-			ignore_space_at_start_and_end = \
-			ignore_space_at_start_and_end),\
-			StringType())\
-			('entity'))\
-			.registerTempTable('entities')
-	if entity_file.split('.')[-1] == 'json':
-		print('loading the entities from '+entity_file)
-		entity_df_json = sqlContext.read.json(entity_file)
-		entity_df_json.withColumn('entity',\
-			udf(lambda input: indicator_preprocess(input,\
-			ignore_space_at_start_and_end = \
-			ignore_space_at_start_and_end),\
-			StringType())\
-			(entity_df_json.columns[0]))\
-			.registerTempTable('entities')
-	df_entity = sqlContext.sql(u"""
-		SELECT DISTINCT entity
-		FROM entities
-		WHERE entity IS NOT NULL
-		""")
-	number_entity = df_entity.count()
-	print('loaded '+str(number_entity)+' entities')
-	if return_format == 'df':
-		return df_entity
-	if return_format == 'list':
-		return [row['entity'] \
-		for row \
-		in df_entity.select('entity').collect()]
+	seperate_arabic_ending = False):
+	try:
+		indicator = re.sub(r'^\"|\"$', '', indicator.strip())
+		if len(indicator) == 0:
+			return None
+		indicator = re.sub('\[[^\[\]]*\]', ' _entity_ ', indicator)
+		indicator = re.sub(re_arabic_number, ' _number_ ', indicator)
+		if ignore_puntuation is False:
+			indicator = re.sub(re_arabic_putuation, ' _puntuation_ ', indicator)		
+		indicator = re.sub(re_arabic_non_letter, ' ', indicator)
+		indicator = ' '+indicator.strip()+' '
+		if seperate_arabic_ending is True:
+			word_with_ending = [r' ' + word.group() 
+				for word \
+				in re.finditer(\
+				r'[^ ]{2,}'+re_arabic_end_all+r' ', \
+				indicator)]
+			for word in word_with_ending:
+				word_old = word
+				ending = re.search(re_arabic_end_all+r' ', word).group()
+				word_new = re.sub(re.escape(ending), r' '+ending, word_old)
+				indicator = re.sub(re.escape(word_old), word_new, indicator)
+		if ignore_space_at_start_and_end is True:
+			indicator = indicator.strip()
+		indicator = indicator.lower()
+		return indicator
+	except:
+		return None
 
 '''
-updating entities from a csv file of adding/deleting
+usage:
+
+text = ' _start_ i live at abu dhabi _puntuation_ and you _puntuation_ my numbrer is _number_ ok _end_ '
+indicator = ' abu dhabi '
+text_indicator_match(text, indicator)
+
+indicator = ' eid _not_ eid mubarak '
+text_indicator_match(' eid mubarak this is jim ', indicator)
+text_indicator_match(' eid this is jim ', indicator)
+
+text = ' _start_ good morning _puntuation_ my name is [jim] _puntuation_ how are you _end_ '
+indicator = ' my name is [ahmode]'
+text_indicator_match(text, \
+	indicator_preprocess(indicator))
+
+indicator = "this is mr _not_ this is mr _name_'s"
+text = "' _start_ this is mr _name_ _puntuation_ s assistant _end_ '"
+text_indicator_match(text_preprocess(text), \
+	indicator_preprocess(indicator))
+
+
+indicator = "ramadan _not_ ramadan mubarak"
+text = "' _start_ this is mr ramadan _end_ '"
+text_indicator_match(text_preprocess(text), \
+	indicator_preprocess(indicator))
+
+indicator = " mr _not_ mr _puntuation_ mrs _not_ mr _puntuation_ ms "
+text = "dear mr/ms, how are you"
+text_indicator_match(text_preprocess(text), \
+	indicator_preprocess(indicator))
+'''
+def text_indicator_match(text, indicator):
+	try:
+		text = re.sub('\[[^\[\]]*\]', '_entity_', text)
+		text = re.sub('\s+', ' ', text)
+		if '_not_' not in indicator:
+			return indicator in text
+		else:
+			indicators = indicator.split('_not_')
+			positive_indiccator = indicators[0]
+			if positive_indiccator in text:
+				output  = True
+			for idx in range(1, len(indicators)):
+				if indicators[idx] in text:
+					output = False
+			return output
+	except:
+		return False
+
+'''
+usage:
+
+input = ' _start_ this is [jim] and _name_ _number_ hi _puntuation_ _end_ '
+process_text2words(input, \
+	ignore_start_and_end = True,\
+	irgore_number = True,\
+	irgnore_puntuation = True,\
+	ignoare_entity = True)
+process_text2words(input, ignoare_entity = False)
+'''
+def process_text2words(input, \
+	ignore_start_and_end = False,\
+	irgore_number = False,\
+	irgnore_puntuation = False,\
+	ignoare_entity = False):
+	try:
+		input = re.sub('\s+', ' ', input).strip()
+		if ignore_start_and_end is True:
+			input = re.sub('(^_start_)|(_end_$)', '', input)
+		if irgore_number is True:
+			input = re.sub('\s+_number_\s+', ' ', input)
+		if irgnore_puntuation is True:
+			input = re.sub('\s+_puntuation_\s+', ' ', input)
+		if ignoare_entity is True:
+			input = re.sub('\s+_[a-z]+_\s+', ' ', input)
+			input = re.sub('\s+\[[^\[\]]+\]\s+', ' ', input)
+		input = re.sub('\s+', ' ', input)
+		return input.strip().split(' ')
+	except:
+		return None
+
+'''
+convet a text a list of idx
 
 usage:
 
-rm entity.csv
-vi entity.csv
-i
-jim
-wang
-yan
+input = u"Good morning, sir, how are you 123 67?"
+print text2word_idx(input)
+print text2word_idx('I have 30 40 books')
 
-rm entity_to_delete.csv
-vi entity_to_delete.csv
-i
-yan
-
-rm entity_to_add.csv
-vi entity_to_add.csv
-i
-liang
-
-hadoop fs -rm -r /data/jim/entity.csv
-hadoop fs -put /data/jim/entity.csv /data/jim/
-
-hadoop fs -rm -r /data/jim/entity_to_delete.csv
-hadoop fs -put /data/jim/entity_to_delete.csv /data/jim/
-
-hadoop fs -rm -r /data/jim/entity_to_add.csv
-hadoop fs -put /data/jim/entity_to_add.csv /data/jim/
-
-from sms_utility_spark import * 
-
-entity_csv_update(\
-	entity_file_input = '/data/jim/entity.csv',
-	entity_file_to_delete = '/data/jim/entity_to_delete.csv',
-	entity_file_to_add = '/data/jim/entity_to_add.csv',
-	output_file_csv = '/data/jim/entity_new.csv',
-	sqlContext = sqlContext)
-
-entity_csv_update(
-	entity_file_input = '/data/jim/entity.csv',
-	entity_file_to_delete = '/data/jim/entity_to_delete.csv',
-	output_file_csv = '/data/jim/entity_new.csv',
-	sqlContext = sqlContext)
-
-entity_csv_update(
-	entity_file_input = '/data/jim/entity.csv',
-	entity_file_to_add = '/data/jim/entity_to_add.csv',
-	output_file_csv = '/data/jim/entity_new.csv',
-	sqlContext = sqlContext)
+print text2word_idx(\
+	u"\u0647\u0630\u0627 \u0647\u0648 \u062c\u064a\u0645", \
+	language_code = 'ar')
 '''
-def entity_csv_update(entity_file_input,
-	entity_file_to_delete = None,
-	entity_file_to_add = None,
-	output_file_csv = None,
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	###
-	entity_df = load_entities(
-		entity_file = entity_file_input,
-		return_format = 'df',
-		ignore_space_at_start_and_end = True,
-		sqlContext = sqlContext)
-	entity_df.cache()
-	entity_df.registerTempTable('entity_df')
-	###
-	if entity_file_to_add is not None:
-		entity_df_to_add = load_entities(
-			entity_file = entity_file_to_add,\
-			return_format = 'df',
-			ignore_space_at_start_and_end = True,
-			sqlContext = sqlContext)
-		entity_df_to_add.cache()
-		entity_df_to_add.registerTempTable('entity_df_to_add')
-		###
-		entity_temp = sqlContext.sql(u"""
-			SELECT DISTINCT * FROM (
-			SELECT * FROM entity_df
-			UNION ALL
-			SELECT * FROM entity_df_to_add
-			) AS temp
-			""")		
-	else:
-		entity_temp = sqlContext.sql(u"""
-			SELECT * FROM entity_df
-			""")	
-	entity_temp.registerTempTable('entity_temp')
-	entity_temp.cache()
-	###
-	if entity_file_to_delete is not None:
-		entity_df_to_delete = load_entities(
-			entity_file = entity_file_to_delete,\
-			return_format = 'df',
-			ignore_space_at_start_and_end = True,
-			sqlContext = sqlContext)
-		entity_df_to_delete.cache()
-		entity_df_to_delete.registerTempTable('entity_df_to_delete')
-		###
-		output_df = sqlContext.sql(u"""
-			SELECT entity_temp.*
-			FROM entity_temp
-			LEFT JOIN entity_df_to_delete
-			ON entity_df_to_delete.entity = 
-			entity_temp.entity
-			WHERE entity_df_to_delete.entity IS NULL
-			""")
-	else:
-		output_df = sqlContext.sql(u"""
-			SELECT entity_temp.*
-			FROM entity_temp
-			""")
-	output_df.cache()
-	####
-	if output_file_csv is not None:
-		print(u"saving results to "+output_file_csv)
-		output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
-			.zfill(10)
-		os.system(u"hadoop fs -rm -r "+output_df_temp)
-		os.system(u"rm -r "+output_df_temp)
-		output_df.write.format('csv').save(output_df_temp)
-		os.system(u"hadoop fs -get "+output_df_temp+" ./")
-		os.system(u"cat "+output_df_temp+"/* > "+output_file_csv)
-		os.system(u"hadoop fs -rm -r "+output_file_csv)
-		os.system(u"hadoop fs -cp -f "+output_df_temp+u" "+output_file_csv)
-		os.system(u"hadoop fs -rm -r "+output_df_temp)
-		os.system(u"rm -r "+output_df_temp)
-	return output_df
+def text2word_idx(input,\
+	max_word_num = 200000,\
+	language_code = 'en',\
+	package = 're',\
+	ignore_digit = True):
+	try:
+		if ignore_digit:
+			input = re.sub('[0-9]+', '0', input)
+		words = text2words(input, \
+			language_code = language_code,\
+			package = package)
+		words = [w for w in words if w not in ['']]
+		return word_list2word_idx(words)
+	except:
+		return None
 
 '''
-map a title csv tile to a relation datatframe
-
-rm titles.csv
-vi titles.csv
-ifather
-dada
-daddy
-
-title_relation_df = title_csv2title_relation_df(\
-	'titles.csv',\
-	'father_of',\
-	relation_reverse_type = 'child_of')
-'''
-def title_csv2title_relation_df(input_file,\
-	relation_type,\
-	relation_reverse_type = None,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if input_file.split('.')[-1] == 'csv':
-		customSchema = StructType([\
-			StructField("title", StringType(), True)])
-		sqlContext.read.format("csv").option("header", "false")\
-			.schema(customSchema)\
-			.load(input_file)\
-			.withColumn('title',\
-			udf(lambda input: indicator_preprocess(\
-			input, ignore_space_at_start_and_end = True),\
-			StringType())\
-			('title'))\
-			.registerTempTable('temp')
-	if input_file.split('.')[-1] == 'json':
-		sqlContext.read.json(input_file)\
-			.registerTempTable('temp')
-	if relation_reverse_type is not None:
-		return sqlContext.sql(u"""
-			SELECT DISTINCT *, 
-			'"""+relation_type+u"""' AS relation,
-			'"""+relation_reverse_type+u"""' AS relation_reverse
-			FROM temp
-			""")
-	else:
-		return sqlContext.sql(u"""
-			SELECT DISTINCT *, 
-			'"""+relation_type+u"""' AS relation,
-			NULL AS relation_reverse
-			FROM temp
-			""")
-
-'''
-convert text to text with wild patterns of re
 usage:
 
-sudo rm input.json
-sudo vi input.json
-i{'text':' this ia an email jingx@gmgn.com 24r&234 P00 '}
+preprocessed_text_entity2context_idx(\
+	'_start_ sir [rashed] is not come _end_')
 
-hadoop fs -rm -r input.json
-hadoop fs -put input.json ./
-
-from sms_utility_spark import *
-
-text_json2text_entity_wildcard_re_json(
-	input_json = 'input.json',
-	output_json = 'output.json',
-	entity_fun_res = [text2text_email, extract_number],
-	enitty_names = ['email', 'number'],
-	sqlContext = sqlContext)
+preprocessed_text_entity2context_idx(\
+	'_start_ sir [jim wang] _end_')
 '''
-def text_json2text_entity_wildcard_re_json(input_json,
-	output_json,
-	entity_fun_res,
-	enitty_names,
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	print('loading data from '+input_json)
-	output_df = sqlContext.read.json(input_json)
-	output_df = output_df.withColumn('text_entity', udf(lambda input: input, \
-		StringType())('text'))
-	for entity_fun_re, entity_name \
-		in zip(entity_fun_res, enitty_names):
-		print('extracting entities by '+str(entity_fun_re))
-		output_df = output_df.withColumn('text_entity',
-			udf(entity_fun_re, StringType())('text_entity'))
-		output_df = output_df.withColumn(entity_name,
-			udf(text_entity2entities, ArrayType(StringType()))('text_entity'))
-		output_df = output_df.withColumn('text_entity',
-			udf(lambda input: \
-			text_entity2text_entity_wildcard(input, entity_name), \
-			StringType())('text_entity'))
-	output_df = output_df.withColumn('text_entity',
-		udf(text_preprocess, StringType())('text_entity'))
-	output_df.cache()
-	print('saving results to '+output_json)
-	os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-	output_df.write.json('temp')
-	os.system(u"""
-		hadoop fs -get temp ./
-		cat temp/* > """+output_json)
-	os.system(u'hadoop fs -rm -r '+output_json)
-	os.system(u'hadoop fs -mv temp '+output_json)
+def preprocessed_text_entity2context_idx(input):
+	try:
+		left_context = input.split('[')[0].strip().split(' ')
+		right_context = input.split(']')[-1].strip().split(' ')
+		name = re.search('\[.*\]', input).group().strip().split(' ')
+		return {'left_word_idx': word_list2word_idx(left_context),\
+			'right_word_idx': word_list2word_idx(right_context),\
+			'entity_word_idx': word_list2word_idx(name)}
+	except:
+		return None
 
 '''
-usage: 
-
-text_json2entity_re_json(\
-	input_json = '/data/jim/sms_business.json',\
-	output_json = '/data/jim/clinic_dr_name.json',\
-	entity_extract_re_funcs = [extract_dr_name],\
-	enitty_names = ['dr_name'])
-'''
-def text_json2entity_re_json(input_json,\
-	output_json,\
-	entity_extract_re_funcs,\
-	enitty_names,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	print('loading data from '+input_json)
-	output_df = sqlContext.read.json(input_json)
-	print('extracging entities from sms')
-	for func, entity_name \
-		in zip(entity_extract_re_funcs, enitty_names):
-		print('extracting entities by '+str(func))
-		output_df = output_df.withColumn(entity_name,\
-			udf(func, StringType())('text'))
-		output_df.cache()
-	print('saving results to '+output_json)
-	os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-	output_df.write.json('temp')
-	os.system(u"""
-		hadoop fs -get temp ./
-		cat temp/* > """+output_json)
-	os.system(u'hadoop fs -rm -r '+output_json)
-	os.system(u'hadoop fs -mv temp '+output_json)
-
-'''
-extract entities from a dataframe of text
-by using a extraction function
-
-rm input.json
-vi input.json
-i{"text":"it is 10:10 am now","sender":"1"}
-{"text":"this is a test","sender":"2"}
-{"sender":"1"}
-
-usage: 
-
-from sms_utility_spark import *
-sqlContext = sqlContext_local
-
-entity_extract_fun = lambda input: \
-	extract_entity_by_re(input, \
-	re_arabic_number)
-
-input_df = sqlContext.read.json('input.json')
-
-text_df2text_entity_df_by_func(input_df,\
-	entity_extract_fun = entity_extract_fun,\
-	entity_type = 'number',
-	extract_entity_from_original_text = True,\
-	nearby_entity_merge = False)\
-	.show(100, False)
-'''
-def text_df2text_entity_df_by_func(input_df,\
-	entity_extract_fun,\
-	entity_type = 'entity',
-	extract_entity_from_original_text = False,\
-	nearby_entity_merge = False,\
-	entity_type_repalce_by_wildcard = False,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	'''
-	extract entities from text by extraction function
-	'''
-	print('extracting entities by using functin '\
-		+str(entity_extract_fun))
-	if extract_entity_from_original_text is True:
-		output_df = input_df.withColumn('text_entity',\
-			udf(entity_extract_fun, StringType())\
-			('text'))
-	else:
-		output_df = input_df.withColumn('text_entity',\
-			udf(entity_extract_fun, StringType())\
-			('text_entity'))
-	if nearby_entity_merge is True:
-		output_df = output_df.withColumn('text_entity', \
-		udf(lambda input: re.sub('\]\s+\[', ' ', input) \
-		if input is not None else None, \
-		StringType())\
-		('text_entity'))
-	output_df = output_df.withColumn(entity_type, \
-		udf(text_entity2entities, ArrayType(StringType()))\
-		('text_entity'))
-	'''
-	replace the entities by wildcard so that in the 
-	text_preprocessing fucntion they will not be effected
-	'''
-	output_df = output_df.withColumn('text_entity', \
-		udf(lambda input:\
-		text_entity2text_entity_wildcard(\
-		input, entity_type), StringType())\
-		('text_entity'))
-	if extract_entity_from_original_text is True:
-		output_df = output_df.withColumn('text_entity', \
-			udf(text_preprocess, StringType())\
-			('text_entity'))
-	if entity_type_repalce_by_wildcard is False:
-		output_df = output_df.withColumn('text_entity',\
-			udf(lambda input, entities: \
-			text_wildcard_entity_recovery(input, \
-			entities, entity_type,\
-			with_bracket = True), StringType())\
-			('text_entity', entity_type))
-	return output_df
-
-'''
-rm input.json
-vi input.json
-i{"text":"this is wang and you?","sender":"1"}
-{"text":" but it is wang, jingyan haha","sender":"2"}
-{"text":" but it is wang, jingyan wang haha","sender":"3"}
-{"text":" i will cost 131 cloud haha","sender":"4"}
-{"text":" i will cost 131 cloud haha","sender":"5"}
-{"text":"a test","sender":"5"}
-
-rm entities.csv
-vi entities.csv
-iwang
-"wang, jingyan"
-331 cloud
-mr
-
-from sms_utility_spark import *
-sqlContext = sqlContext_local
-
-input_df = sqlContext.read.json('input.json')
-
-text_df2text_entity_df_by_entity_match(\
-	input_df,\
-	'entities.csv',\
-	entity_type = 'name')\
-	.show(100, False)
-
-text_df2text_entity_df_by_entity_match(\
-	input_df,\
-	'entities.csv',\
-	entity_type = 'name',\
-	mathc_entity_by_word = True)\
-	.show(100, False)
-'''
-def text_df2text_entity_df_by_entity_match(\
-	input_df,\
-	entity_file,\
-	mathc_entity_by_word = False,\
-	entity_type = None,\
-	nearby_entity_merge = False,\
-	entity_type_repalce_by_wildcard = False,\
-	ignoare_entity = True,\
-	sqlContext  = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if entity_type is None:
-		entity_type = 'entity'
-	if 'text_entity' not in input_df.columns:
-		print('preprocessing text')
-		input_df = input_df.withColumn(\
-			'text_entity',\
-			udf(text_preprocess, StringType())\
-			('text'))
-		input_df.cache()	
-	'''
-	match the entities by a fucntion
-	'''
-	if mathc_entity_by_word is False:
-		entities = load_entities(entity_file,\
-			return_format = 'list',\
-			ignore_space_at_start_and_end = False,\
-			sqlContext = sqlContext)
-		entity_extract_fun = lambda input: \
-			marge_entity2preprocessed_text(\
-			input,\
-			entities, \
-			nearby_entity_merge = nearby_entity_merge)
-		output_entity = text_df2text_entity_df_by_func(\
-			input_df,\
-			entity_extract_fun,\
-			entity_type = entity_type,
-			extract_entity_from_original_text = False,\
-			nearby_entity_merge = nearby_entity_merge,\
-			entity_type_repalce_by_wildcard = \
-			entity_type_repalce_by_wildcard,\
-			sqlContext = sqlContext)
-	if mathc_entity_by_word is True:
-		df_entity = load_entities(entity_file,\
-			return_format = 'df',\
-			sqlContext = sqlContext)
-		'''
-		load the texts from the input json file
-		'''
-		input_df.registerTempTable('input')
-		df_input = sqlContext.sql(u"""
-			SELECT DISTINCT text_entity
-			FROM input
-			WHERE text_entity IS NOT NULL
-			""")
-		'''
-		match words of preprocessed text and the entity
-		to find the candidate text-entity paires
-		'''
-		print('spliting input texts and entities to words')
-		'''
-		split the input text to words
-		'''
-		df_input.withColumn('word',\
-			udf(lambda input: process_text2words(input, \
-			ignore_start_and_end = True,\
-			irgnore_puntuation = True,\
-			ignoare_entity = ignoare_entity),\
-			ArrayType(StringType()))\
-			('text_entity'))\
-			.withColumn('word', explode('word'))\
-			.registerTempTable('temp1')
-		input_word = sqlContext.sql(u"""
-			SELECT DISTINCT text_entity, word
-			FROM temp1
-			WHERE word IS NOT NULL
-			""")
-		input_word.cache()
-		input_word.registerTempTable('input_word')
-		'''
-		split the entities to words
-		'''
-		df_entity.withColumn('word',\
-			udf(lambda input: process_text2words(input, \
-			irgnore_puntuation = True,\
-			ignoare_entity = ignoare_entity),\
-			ArrayType(StringType()))\
-			('entity'))\
-			.withColumn('word',\
-			explode('word'))\
-			.registerTempTable('temp2')
-		entity_word = sqlContext.sql(u"""
-			SELECT DISTINCT entity, word
-			FROM temp2
-			WHERE word IS NOT NULL
-			""")
-		entity_word.cache()
-		entity_word.registerTempTable('entity_word')
-		'''
-		join by words and the entity to texts
-		'''
-		print('matching entities to texts by joining words')
-		input_entity_candidate2 = sqlContext.sql(u"""
-			SELECT DISTINCT 
-			input_word.text_entity,
-			entity_word.entity
-			FROM input_word
-			JOIN entity_word
-			ON input_word.word = entity_word.word
-			""").groupby('text_entity')\
-			.agg(collect_set('entity').alias('entity'))
-		input_entity_candidate2.cache()
-		input_entity_candidate2.registerTempTable(\
-			'text_entity_indicator_candidate')
-		print('merging matched entities to text_entity')
-		output_entity = sqlContext.sql(u"""
-			SELECT input.*,
-			text_entity_indicator_candidate.entity
-			AS candidate_entities
-			FROM input
-			LEFT JOIN text_entity_indicator_candidate
-			ON text_entity_indicator_candidate.text_entity
-			= input.text_entity
-			""").withColumn('text_entity',\
-			udf(lambda input, entities: \
-			marge_entity2preprocessed_text(input, \
-			entities,\
-			nearby_entity_merge = nearby_entity_merge), StringType())\
-			('text_entity', 'candidate_entities'))\
-			.drop('candidate_entities')\
-			.withColumn(entity_type,\
-			udf(text_entity2entities, ArrayType(StringType()))\
-			('text_entity'))
-		output_entity.cache()
-	if entity_type_repalce_by_wildcard is True:
-		output_entity = output_entity\
-			.withColumn('text_entity',\
-			udf(lambda input: \
-			text_entity2text_entity_wildcard(\
-			input, entity_type), \
-			StringType())\
-			('text_entity'))
-	return output_entity
-
-'''
-rm input.json
-vi input.json
-i{"text":"i have 100 aed and you give me usd 100.00 "}
-
-rm currency.csv
-vi currency.csv
-iaed
-usd
-
-rm money_indicator.csv
-vi money_indicator.csv
-i_number_ _currency_
-_currency_ _number_
-
-text_entity_json2text_entity_comb_json(\
-	comb_entity_indicator_csv = 'money_indicator.csv',\
-	comb_entity = 'money',\
-	sub_entity_files_funcs = [extract_number,\
-	'currency.csv'],\
-	sub_entity_types = ['number',\
-	'currency'],\
-	input_json = 'input.json',\
-	output_json = 'output.json',\
-	sqlContext = sqlContext)
-'''
-
-def text_entity_json2text_entity_comb_json(\
-	comb_entity_indicator_csv,\
-	comb_entity = 'entity',\
-	sub_entity_files_funcs = None,\
-	sub_entity_types = None,\
-	sub_entity_indicator_match_by_word = None,\
-	sub_entity_type_repalce_by_wildcard = False,\
-	input_json = None,\
-	input_df = None,\
-	output_json = None,\
-	comb_entity_indicator_match_by_word = False,\
-	comb_entity_type_repalce_by_wildcard = False,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if input_json is not None:
-		print('loading data from '+input_json)
-		input_df = sqlContext.read.json(input_json)
-	'''
-	1. replace the sub entities by function/indicators
-	'''
-	if sub_entity_indicator_match_by_word is None:
-		sub_entity_indicator_match_by_word = [False]*len(sub_entity_files_funcs)
-	print('replace the sub entties')
-	output_df = input_df
-	extract_entity_from_original_text = True
-	for entity_indicator, entity_type, entity_match_by_word \
-		in zip(sub_entity_files_funcs,\
-			sub_entity_types,\
-			sub_entity_indicator_match_by_word):
-		if entity_type not in output_df.columns:
-			print('extracting '+entity_type)
-			if type(entity_indicator) is str:
-				output_df = text_df2text_entity_df_by_entity_match(\
-					output_df,\
-					entity_file = entity_indicator,\
-					entity_type = entity_type,\
-					entity_type_repalce_by_wildcard = True,\
-					nearby_entity_merge = True,\
-					mathc_entity_by_word = entity_match_by_word,\
-					sqlContext  = sqlContext)
-			else:
-				output_df = text_df2text_entity_df_by_func(\
-					output_df,\
-					entity_extract_fun = entity_indicator,\
-					entity_type = entity_type,
-					extract_entity_from_original_text =\
-					extract_entity_from_original_text,\
-					nearby_entity_merge = True,\
-					entity_type_repalce_by_wildcard = True,\
-					sqlContext = sqlContext)
-				if extract_entity_from_original_text is True:
-					extract_entity_from_original_text = False
-	'''
-	2. match to the comb entity indicators
-	'''
-	print('matching to comb entity indicators')
-	output_df = text_df2text_entity_df_by_entity_match(\
-		output_df,\
-		entity_file = comb_entity_indicator_csv,\
-		entity_type = comb_entity,\
-		mathc_entity_by_word =\
-		comb_entity_indicator_match_by_word, \
-		nearby_entity_merge = True,\
-		sqlContext  = sqlContext)
-	'''
-	3. recover the sub entities
-	'''
-	if sub_entity_type_repalce_by_wildcard is not True:
-		print('recover the sub entities in the comb entity')
-		for entity_type in sub_entity_types:
-			output_df = output_df.withColumn('text_entity',\
-				udf(lambda input, entities:\
-				text_entity_wildcard_subentity_recovery(input, \
-				entities, \
-				entity_type))('text_entity', entity_type))
-	'''
-	4. recover the comb_entities
-	'''
-	print('extracting the comb entities')
-	output_df = output_df.withColumn(comb_entity,\
-		udf(text_entity2entities, ArrayType(StringType()))\
-		('text_entity'))
-	'''
-	5. replace the comb entities by wild card
-	'''
-	if comb_entity_type_repalce_by_wildcard is True:
-		print('')
-		output_df = output_df.withColumn('text_entity',\
-			udf(lambda input: text_entity2text_entity_wildcard(\
-			input, comb_entity), \
-			StringType())('text_entity'))
-	###
-	if output_json is not None:
-		print('saving results to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
-		os.system('hadoop fs -rm -r '+output_json)
-		os.system('hadoop fs -cp -f temp '+output_json)
-		print('results saved to '+output_json)
-	else:
-		return output_df
-
-'''
-conver a json file of text to texts with entities
-by mathcing to a csv file of entities
+convet a list of words to a list of idx
 
 usage:
 
-rm input.json
-vi input.json
-i{"text":"this is wang and you?","sender":"1"}
-{"text":" but it is wang, jingyan haha","sender":"2"}
-{"text":" but it is wang, jingyan wang haha","sender":"3"}
-{"text":" i will cost 131 cloud haha","sender":"4"}
-{"text":" i will cost 131 cloud haha","sender":"5"}
-{"text":"a test","sender":"5"}
+from sms_nlp_conll_ultility import *
 
-rm entities.csv
-vi entities.csv
-iwang
-"wang, jingyan"
-331 cloud
-mr
+u'morning'.encode('utf-8')
 
-from sms_utility_spark import *
+u'morning'.encode('utf-8')
 
-import time
-start_time = time.time()
-text_json2text_entity_json('input.json',
-	'output1.json',\
-	entity_file = 'entities.csv',\
-	entity_type = 'name',\
-	nearby_entity_merge = True)
-print(time.time() - start_time)
-#1.59361386299
+input = [u'Good', u'morning', u',', u'Noel', u'Smith', u'.', u'This', u'is', u'Mr']
+print word_list2word_idx(input)
 
-import time
-start_time = time.time()
-text_json2text_entity_json('input.json',
-	'output1.json',\
-	entity_file = 'entities.csv',\
-	mathc_entity_by_word = True,\
-	entity_type = 'name',\
-	nearby_entity_merge = True)
-print(time.time() - start_time)
-#22.5578608513
+[317924L, 381322L, 314168L, 290642L, 368046L, 117879L, 341030L, 37208L, 250631L]
+
+
+words = text2words(u"\u0647\u0630\u0627 \u0647\u0648 \u062c\u064a\u0645", \
+	language_code = 'ar')
+print word_list2idx(words)
+
+print word_list2idx([u"\u0647\u0630\u0627", u"\u0647\u0648", u"\u062c\u064a\u0645"])
+'''
+hash_function = lambda w: \
+	int(md5(w.encode('utf-16')).hexdigest(), 16)
+
+def word_list2word_idx(input):
+	try:
+		return [(hash_function(w.lower()) \
+		% (num_word_max - 1) + 1) \
+		for w in input]
+	except:
+		return None
+
+'''
+convert a text entity to a list of entity_contexts
 
 usage:
 
-from sms_utility_spark import *
+input = ' hw r u [dr] and your family dear [prof] this is a [dr] and your [student] ha ha '
+text_entity2entity_context_list(input)
 
-extract_number = lambda input: \
-	extract_entity_by_re(input, \
-	re_arabic_number)
+[' hw r u [dr] and your family dear prof this is a dr and your student ha ha ', ' hw r u dr and your family dear [prof] this is a dr and your student ha ha ', ' hw r u dr and your family dear prof this is a [dr] and your student ha ha ', ' hw r u dr and your family dear prof this is a dr and your [student] ha ha ']
 
-text_json2text_entity_json(\
-	'input.json',
-	'output.json',\
-	entity_extract_fun = extract_number,\
-	entity_type = 'number',\
-	entity_type_repalce_by_wildcard = True)
+input = " _start_ [sheikha] a gentle reminder of [sheikh] _puntuation_ s and your _meet_ with [ms shanahan] at _number_ am tomorow _number_ th _month_ in [al] mamoura _puntuation_ thank you _end_ "
+text_entity2entity_context_list(input,\
+	context_entity_replacy_by_wildcard = True,\
+	entity_type = 'name')
+
+[' hw r u [dr] and your family dear  this is a  and your  ha ha ', ' hw r u _name_ and your family dear [prof] this is a  and your  ha ha ', ' hw r u _name_ and your family dear _name_ this is a [dr] and your  ha ha ', ' hw r u _name_ and your family dear _name_ this is a _name_ and your [student] ha ha ']
+'''
+def text_entity2entity_context_list(input, \
+	context_entity_replacy_by_wildcard = False,\
+	entity_type = 'entity'):
+	try:
+		if '[' not in input:
+			return None
+		context_idx = zip([i for i in range(len(input)) \
+			if input[i] == '['],
+			[i for i in range(len(input)) \
+			if input[i] == ']'])
+		context = [(input[0:start], \
+			input[start:end+1] ,\
+			input[end+1:])
+			for start, end in context_idx]
+		if context_entity_replacy_by_wildcard is True:
+			context = [re.sub('\[[^\[\]]+\]', '_'+entity_type+'_', e[0])\
+				+e[1]\
+				+re.sub('\[[^\[\]]+\]', '_'+entity_type+'_', e[2])\
+				for e in context]
+		else:
+			context = [re.sub('(\[|\])', '', e[0])\
+				+e[1]\
+				+re.sub('(\[|\])', '', e[2])\
+				for e in context]
+		return context
+	except:
+		return None
+
+'''
+convert a csv file of indicators to a list of indicators
 
 usage:
-
-rm input.json
-vi input.json
-i{"text":"my wife will come"}
-{"text":"my son will come"}
-{"sender":"123"}
 
 rm indicator.csv
 vi indicator.csv
-imy wife
+i this is a indicator
 
-from sms_utility_spark import *
+another one
+"this is the last one, and you"
+there are 100 apples
 
-text_json2text_entity_json(\
-	input_json = 'input.json',
-	output_json = 'output.json',\
-	entity_file = 'indicator.csv',\
-	entity_type = 'male_indicator',\
-	entity_surrounded_by_brackets = False)
+from sms_utility_re import *
+
+print extract_indicator_list_from_csv(\
+	'indicator.csv')
 '''
-def text_json2text_entity_json(input_json = None,
-	input_df = None,\
-	output_json = None,\
-	entity_extract_fun = None,\
-	entity_file = None,\
-	mathc_entity_by_word = False,\
-	entity_type = None,\
+def extract_indicator_list_from_csv(indicator_file,\
+	put_space_before_and_after_entity = True):
+	try:
+		indicators = open(indicator_file)\
+			.read().decode('utf-8').strip().split('\n')
+		output = []
+		for indicator in indicators:
+			indicator1 = indicator_preprocess(indicator, \
+				ignore_space_at_start_and_end \
+				= not put_space_before_and_after_entity)
+			if indicator1 is not None:
+				output.append(indicator1)
+		output = list(set(output))
+		return output
+	except:
+		return None
+
+'''
+match a text against a list of indicators
+
+input = u"""
+your boss is here
+"""
+match_indicator(input, [' your boss ', ' chef it ', ' hi my dear dr '])
+
+indicators = [' dear xxxxx ', ' morning my xxxxx ', ' hw r u xxxxx ', ' sssss xxxxx we ']
+input = '[dr] we and your family. dear 00'
+match_indicator(input, indicators)
+
+match_indicator('you have missed 100 calls', [' missed 0 calls'])
+
+input = u"abc 6879 \u0627\u0644\u062a\u062e\u0641\u064a\u0636\u0627\u062a \u0639\u0646\u062f \u0646\u0627\u062c\u0648\u0632 \u0633\u064a\u0643\u0631\u062a \u0648\u062a\u0634\u0645\u0644"
+indicators = [u" \u0627\u0644\u062a\u062e\u0641\u064a\u0636\u0627\u062a \u0639\u0646\u062f ", u" \u0644\u062a \u062d\u062f\u064a\u062b\u0627 \u0644\u0644\u0623\u0645 "]
+print match_indicator(input, indicators,\
+	language_code = 'ar')
+
+input = ' sssss xxxxx here how are you '
+indicators = [' sssss xxxxx here ']
+match_indicator(input, indicators)
+
+input = 'dear sir how are you'
+indicators = [' dear sir _not_ dear sir madam ', ' how ']
+match_indicator(input, indicators)
+'''
+def match_indicator(input, \
+	indicators,\
+	max_indicator_to_match = 5000,\
+	language_code = 'en',\
+	return_original_entity = False):
+	try:
+		if language_code == 'en':
+			input = input.lower().strip()
+			if return_original_entity is True:
+				entity = re.search('\[[^\[\]]*\]', input).group()
+				entity = re.sub('[^\w]+', '', entity)
+			else:
+				input = re.sub('\[[^\[\]]*\]', '_entity_', input)
+			input = re.sub('[^\w]+', ' ', input)
+			input = re.sub('[0-9]+', '0', input)
+			input = ' _start_ '+ input.strip() +' _end_ '
+			for indicator in indicators[0:max_indicator_to_match]:
+				if return_original_entity is True:
+					indicator = re.sub('_entity_', entity, indicator)
+				if indicator in input:
+					return indicator.strip()
+				if '_not_' in indicator:
+					positive_indicator = ' '+indicator.split('_not_')[0].strip()+' '
+					negative_indicator = ' '+indicator.split('_not_')[1].strip()+' '
+					if positive_indicator in input\
+						and negative_indicator not in input:
+						return indicator.strip()
+			return None
+		if language_code == 'ar':
+			input = input.lower().strip()
+			input = re.sub('\[[^\[\]]*\]', 'xxxxx', input)
+			input = re.sub(u'[^\w\u0600-\u06ff\u0750-\u077f]+', ' ', input)
+			input = re.sub('[0-9]+', '0', input)
+			input = ' _start_ '+ input.strip() +' _end_ '
+			for indicator in indicators[0:max_indicator_to_match]:
+				if indicator in input:
+					return indicator.strip()
+			return None
+	except:
+		return None
+
+'''
+merging a list of entities to a preprocessed text
+replacing the entities in the text by [entity]
+
+usage:
+
+from sms_utility_re import * 
+
+entitis = [' abu dhabi ', \
+	' uae ',\
+	' jim _not_ jim wang ', \
+	' zhang ', \
+	' zhang guohui ', \
+	' xxx ']
+
+marge_entity2preprocessed_text(\
+	' i will go to abu dhabi and uae ',\
+	entitis)
+
+marge_entity2preprocessed_text(\
+	' i will go to abu dhabi uae ',\
+	entitis,\
+	nearby_entity_merge = True)
+
+marge_entity2preprocessed_text(\
+	' this is zhang and zhang guohui  ',\
+	entitis)
+
+marge_entity2preprocessed_text(\
+	' i am jim wang ',\
+	entitis)
+
+marge_entity2preprocessed_text(\
+	' jim and wang ',\
+	entitis)
+'''
+def marge_entity2preprocessed_text(text, \
+	entitis, \
+	nearby_entity_merge = False):
+	try:
+		#fiter and sor the entities
+		entitis = [entity for entity in entitis \
+			if entity.split('_not_')[0] in text]
+		entitis.sort(key=len, reverse=True)
+		#merge entities 
+		for entity in entitis:
+			#generate the positive and negative entities
+			if '_not_' in entity:
+				entity_list = entity.split('_not_')
+				entity_positive = entity_list[0]
+				entity_negatives = entity_list[1:]
+			else:
+				entity_positive = entity
+				entity_negatives = []
+			#search the texts which doen't have entities yet
+			not_matched = [e.group() for e \
+				in re.finditer('(^|\])[^\[\]]+(\[|$)', text)]
+			#match the entites to the text
+			for str_not_matched in not_matched:
+				if entity_positive in str_not_matched \
+					and len([negative for negative \
+					in entity_negatives \
+					if negative in str_not_matched]) == 0:
+					str_not_matched1 = re.sub(entity_positive, \
+					' ['+entity_positive.strip()+'] ', \
+					str_not_matched)
+					text = re.sub(re.escape(str_not_matched), \
+					str_not_matched1, text)
+			text = re.sub('\s+', ' ', text)
+		if nearby_entity_merge is True:
+			text = re.sub('\] \[', ' ', text)
+		return text
+	except:
+		return text
+
+'''
+replace the entities in the context by entity wildcard 
+while not touching the text in the balackets
+
+usage:
+
+input = ' _start_ i will go to dubai mall dubai and then leave dubai to give you [100 aed] how do you think _end_ '
+
+entities = [' dubai ', ' dubai mall ']
+
+entity_type = 'location'
+
+text_context2text_context_entity_wildcard(input,\
+	entities,\
+	entity_type = entity_type,\
+	nearby_entity_merge = False)
+
+text_context2text_context_entity_wildcard(' this is a [text] ',\
+	None)
+'''
+def text_context2text_context_entity_wildcard(input,\
+	entities = None,\
+	entity_type = 'entity',\
+	nearby_entity_merge = True):
+	try:
+		entities.sort(key=len, reverse=True)
+		for entity in entities:
+			not_matcheds = [e.group() for e \
+				in re.finditer('(^|\])[^\[\]]+(\[|$)', input)]
+			for not_matched in not_matcheds:
+				not_matched_wild = re.sub(entity, \
+					' _'+entity_type+'_ ', not_matched)
+				input = re.sub(re.escape(not_matched), \
+					not_matched_wild, input)
+		if nearby_entity_merge is True:
+			input = re.sub('(_'+entity_type+'_ )+',\
+				'_'+entity_type+'_ ', input)
+		return input
+	except:
+		return input
+
+'''
+match a text to a list of entityies and return the replaced text
+of the entities
+
+usage:
+
+from sms_re_utility import *
+
+entities = [' representative ', ' painter ', ' barrister ', ' dr ', ' professor ', ' prof ']
+input = "good morning, representative wang, how are you. this is your dr. i am a prof and my professor is good "
+print match_entity(input, entities)
+
+input = "dfasag fgaaad"
+print match_entity(input, entities)
+
+
+input = "Sayed Mohamod, hi this is Jim, Jan is not here.  how are you? mr wang 0000 9999"
+match_entity(input, \
+	entities = ['Jim', 'wang', 'Sayed', 'Mohamod', 'Jan'],\
+	keep_original_text = True,\
+	nearby_entity_merge = True)
+
+match_entity(input, \
+	entities = ['Jim', 'wang', 'Sayed', 'Mohamod', 'Jan'],\
+	keep_original_text = True,\
+	nearby_entity_merge = True,\
+	entity_wildcard = 'name')
+
+input = "V can I call? I spoke to axel"
+entities = ["axel"]
+
+input = u"Hi (Zeeshan). Are you alright to come tonight. My wife will meet you. I have been called to a late meeting and not sure if I can be there tonight but my wife's name is Lisa"
+entities = ['Zeeshan', 'Lisa']
+print match_entity(input, \
+	entities = entities,\
+	only_return_entity_included = True,\
+	nearby_entity_merge = True,\
+	entity_wildcard = 'name',\
+	keep_original_text = True)
+'''
+def match_entity(input, entities,\
+	max_entities_to_match = 1000,\
+	keep_original_text = False,\
+	entity_wildcard = None,\
 	nearby_entity_merge = False,\
-	entity_type_repalce_by_wildcard = False,\
-	entity_surrounded_by_brackets = True,\
-	ignoare_entity = True,\
-	sqlContext  = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if input_json is not None:
-		print('loading the input date from '+input_json)
-		input_df_original = sqlContext.read.json(input_json)
-	else:
-		input_df_original = input_df
-	'''
-	matching to short entity list by fucntion
-	'''
-	if entity_extract_fun is not None:
-		print('extracting entities from text by fucntion '\
-			+str(entity_extract_fun))
-		if 'text_entity' in input_df_original.columns:
-			extract_entity_from_original_text = False
+	only_return_entity_included = True,\
+	match_by_word = False):
+	try:
+		if keep_original_text is True:
+			input = re.sub('(\[|\])', '', input)
+			for name in entities:
+				name_context = re.search('(^|[^\w])'+name+'($|[^\w])',\
+					input).group()
+				name_context1 = name_context.split(name)[0] \
+					+'['+name+']'\
+					+name_context.split(name)[1]
+				input = re.sub(re.escape(name_context), name_context1, input)
 		else:
-			extract_entity_from_original_text = True
-		output_entity = text_df2text_entity_df_by_func(\
-			input_df_original,\
-			entity_extract_fun,\
-			entity_type = entity_type,
-			extract_entity_from_original_text \
-			= extract_entity_from_original_text,\
-			nearby_entity_merge = nearby_entity_merge,\
-			entity_type_repalce_by_wildcard = \
-			entity_type_repalce_by_wildcard,\
-			sqlContext = sqlContext)
-	'''
-	matching to a entity csv file by word matching to 
-	reduce search space
-	'''
-	if entity_file is not None:
-		print('extracting entities from text by matching to '\
-			+entity_file)
-		output_entity = text_df2text_entity_df_by_entity_match(\
-			input_df_original,\
-			entity_file,\
-			mathc_entity_by_word = mathc_entity_by_word,\
-			entity_type = entity_type,\
-			nearby_entity_merge = nearby_entity_merge,\
-			entity_type_repalce_by_wildcard = \
-			entity_type_repalce_by_wildcard,\
-			ignoare_entity = ignoare_entity,\
-			sqlContext  = sqlContext)
-	if entity_surrounded_by_brackets is False:
-		output_entity = output_entity.withColumn(\
-			'text_entity',\
-			udf(lambda input: re.sub('\[|\]', '', input) \
-			if input is not None else None,\
-			StringType())('text_entity'))
-	if output_json is not None:
-		print('saving the result to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_entity.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
-		os.system('hadoop fs -rm -r '+output_json)
-		os.system('hadoop fs -cp -f temp '+output_json)
-	else:
-		return output_entity
+			input = input.lower().strip()
+			input = re.sub('[^\w]+', ' ', input)
+			input = re.sub('[0-9]+', '0', input)
+			input = ' '+input.strip()+' '
+			if match_by_word is True:
+				words = input.split(' ')
+				for word in words:
+					if ' '+word+' ' in entities:
+						input = re.sub(' '+word+' ', \
+						' ['+word+'] ', \
+						input)
+			else:
+				for entity in entities[0:max_entities_to_match]:
+					if entity.lower() in input:
+						input = re.sub(' '+entity.lower().strip()+' ', \
+						' ['+entity.lower().strip()+'] ', \
+						input)
+		if '[' not in input and only_return_entity_included is True: 
+			return None
+		else:
+			if nearby_entity_merge is True:
+				input = re.sub('\]\s+\[', ' ', input)
+			if entity_wildcard is not None:
+				input = text_entity2text_entity_wildcard(\
+					input,\
+					entity_wildcard = entity_wildcard)	
+			return input
+	except:
+		pass
+	return None
 
 '''
-replace the entities in a context of entity by wildcards
+replace the entity with brackets by a _wildcard_
 
 usage:
 
-rm input.json
-vi input.json
-i{"text_entity":" _start_ this is mr jim i am from [China] _end_ ","location":["china"]}
-{"text_entity":" _start_ are you in [Dubai] dr jim _end_ ","location":["dubai"]}
+input = ' this is [dr] wang '
+entity_wildcard = 'occupation'
+text_entity2text_entity_wildcard(input,\
+	entity_wildcard = 'occupation')
 
-rm names.csv
-vi names.csv
-ijim
-yan
-smith
 
-rm title.csv
-vi title.csv
-imr
-dr
-
-from sms_utility_spark import *
-
-text_context_json2text_context_entity_wildcard_json(\
-	input_json = 'input.json',\
-	output_json = 'output.json',\
-	target_entity = 'location',\
-	entity_files = ['names.csv', 'title.csv'],\
-	entities =  ['name', 'title'],\
-	sqlContext = sqlContext)
+input = " _start_ [ _location_  _clinic_  _location_ ] confirms "
+text_entity2text_entity_wildcard(input,\
+	entity_wildcard = 'entity')
 '''
-def text_context_json2text_context_entity_wildcard_json(\
-	entity_files,\
-	entities,\
-	input_json = None,\
-	input_df = None,\
-	output_json = None,\
-	target_entity = None,\
-	entity_nearby_merge = None,\
-	mathc_entity_by_word = None,\
-	sqlContext  = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	###
-	if input_json is not None:
-		print('loading the input texts from '+input_json)
-		input_df = sqlContext.read.json(input_json)
-	'''
-	before replace the entities in the context, firstly 
-	replace the target entity, so that the target entiteis
-	are not effected.
-	The target entities will be recoevered later
-	'''
-	output_df = input_df
-	if target_entity is not None:
-		print('replace the target entity by wildcard')
-		output_df = output_df.withColumn(\
-			'text_entity',\
-			udf(lambda input: text_entity2text_entity_wildcard(\
-			input, target_entity), \
-			StringType())('text_entity'))
-	else:
-		if 'text_entity' not in input_df.columns:
-			output_df = output_df.withColumn(\
-			'text_entity',\
-			udf(text_preprocess, StringType())('text'))
-	###
-	print('replace the entities in context by wildcards')
-	if entity_nearby_merge is None:
-		entity_nearby_merge = [False]*len(entity_files)
-	if mathc_entity_by_word is None:
-		mathc_entity_by_word = [False]*len(entity_files)
-	for entity_csv, entity_type, nearby_entity_merge, \
-		match_entity_by_word \
-		in zip(entity_files, entities,\
-			entity_nearby_merge,\
-			mathc_entity_by_word):
-		output_df = text_df2text_entity_df_by_entity_match(\
-			output_df,\
-			entity_csv,\
-			mathc_entity_by_word = match_entity_by_word,\
-			entity_type = entity_type,\
-			nearby_entity_merge = nearby_entity_merge,\
-			entity_type_repalce_by_wildcard = True,\
-			sqlContext  = sqlContext)
-	output_df.cache()
-	###
-	if target_entity is not None:
-		print('receovering the '+target_entity+' entities')
-		output_df = output_df.withColumn('text_entity', \
-			udf(lambda input, entities: \
-			text_wildcard_entity_recovery(input, \
-			entities, entity_type = target_entity, \
-			with_bracket = True),\
-			StringType())('text_entity', target_entity))
-	output_df.cache()
-	if output_json is not None:
-		print('saving the results to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
-		os.system(u"hadoop fs -rm -r "+output_json)
-		os.system(u"hadoop fs -cp -f temp "+output_json)
-		print('results saved to '+output_json)
-	return output_df
-
-
-'''
-replace the entities in the context of indicators
-
-usage:
-
-sudo rm input.csv
-sudo vi input.csv
-i _start_ this is jim working for pegasus
-_start_ this is [dr] working for pegasus my wife is jean
-
-sudo rm name1.csv 
-sudo vi name1.csv 
-ijim
-jean
-
-sudo rm orgnization1.csv 
-sudo vi orgnization1.csv 
-ipegasus
-
-input_csv = 'input.csv'
-output_csv = 'output.csv'
-
-entity_files = ['name1.csv', 'orgnization1.csv']
-entities = ['name', 'orgnization']
-
-indicator_csv2indicator_context_entity_wildcard_csv(\
-	entity_files,\
-	entities,\
-	input_csv = input_csv,\
-	output_csv = output_csv)
-'''
-def indicator_csv2indicator_context_entity_wildcard_csv(\
-	entity_files,\
-	entities,\
-	input_csv = None,\
-	input_df = None,\
-	output_csv = None,\
-	entity_nearby_merge = None,\
-	mathc_entity_by_word = None,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if input_csv is not None:
-		customSchema = StructType([\
-			StructField("text_entity", StringType(), True)])
-		input_df = sqlContext.read.format("csv")\
-			.option("header", "false")\
-			.schema(customSchema)\
-			.load(input_csv)\
-			.withColumn('text_entity',\
-			udf(lambda input: indicator_preprocess(input,\
-			ignore_space_at_start_and_end = \
-			False),\
-			StringType())\
-			('text_entity'))
-	input_df.cache()
-	outut_df = text_context_json2text_context_entity_wildcard_json(\
-		entity_files = entity_files,\
-		entities = entities,\
-		input_df = input_df,\
-		entity_nearby_merge = entity_nearby_merge,\
-		mathc_entity_by_word = mathc_entity_by_word,\
-		sqlContext = sqlContext)
-	outut_df = outut_df.withColumnRenamed('text_entity', 'indicator')\
-		.select('indicator')
-	outut_df.cache()
-	if output_csv is not None:
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		outut_df.write.format('csv')\
-			.option("header", "false")\
-			.save('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_csv)
-		os.system(u"hadoop fs -rm -r "+output_csv)
-		os.system(u"hadoop fs -cp -f temp "+output_csv)
-	return outut_df
-
-'''
-convert a text_entity to df, where each text_entity has only one
-single entity, while the other entites are neither replaced
-by wildcard of as the original text
-
-usage: 
-
-rm input.json
-vi input.json
-i{"text_entity":" _start_ i am [jim] and you are [smith] _end_ "}
-{"text_entity":" _start_ this is a test _end_ "}
-
-from sms_utility_spark import *
-sqlContext = sqlContext_local
-
-input_df = sqlContext.read.json('input.json')
-text_entity2text_single_entity(input_df,\
-	target_entity_context_wildcard = 'name')\
-	.show(100, False)
-
-text_entity2text_single_entity(input_df,\
-	target_entity_type = 'trigger',\
-	replace_target_entity_by_wildcard = True)\
-	.show(100, False)
-'''
-def text_entity2text_single_entity(input_df,\
-	target_entity_type = 'entity',\
-	target_entity_context_wildcard = None,\
-	replace_target_entity_by_wildcard = False,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if target_entity_context_wildcard is not None:
-		udf_text_entity2entity_context_list = \
-		lambda input: text_entity2entity_context_list(\
-		input,\
-		entity_type = target_entity_context_wildcard,\
-		context_entity_replacy_by_wildcard = True)
-	else:
-		udf_text_entity2entity_context_list = \
-		text_entity2entity_context_list
-	output_df = input_df.withColumn('text_entity',\
-		udf(udf_text_entity2entity_context_list, \
-		ArrayType(StringType()))\
-		('text_entity'))\
-		.withColumn('text_entity',\
-		explode('text_entity'))\
-		.withColumn(target_entity_type, \
-		udf(text_entity2entity, StringType())\
-		('text_entity'))
-	if replace_target_entity_by_wildcard:
-		output_df = output_df.withColumn('text_entity', \
-			udf(lambda input: text_entity2text_entity_wildcard(\
-			input, entity_wildcard = target_entity_type), \
-			StringType())('text_entity'))
-	return output_df
-
-'''
-extract triggers from text and 
-generate candidate text_trigger texts
-only the texts with one or more triggers will be kept
-
-usage:
-
-rm input.json
-vi input.json
-i{"text":"Today's meeting has been cancled. I will see you tomorrow."}
-{"text":"He visit me today. He will visit Ahmed tomorrow."}
-{"text":"this is a test"}
-{"text":"it is good"}
-
-rm triggers.csv
-vi triggers.csv
-imeeting
-see
-visit
-go
-
-from sms_utility_spark import *
-
-text_json2text_trigger(input_json = 'input.json',\
-	output_json = 'output.json',\
-	trigger_file = 'triggers.csv',\
-	trigger_type = 'meet')
-'''
-def text_json2text_trigger(trigger_file,\
-	input_json = None,\
-	input_df = None,\
-	output_json = None,\
-	mathc_entity_by_word = False,\
-	trigger_type = 'trigger',\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if input_json is not None:
-		print('loading data from '+input_json)
-		input_df = sqlContext.read.json(input_json)
-	print('extracting the triggers by matching to '\
-		+trigger_file)
-	text_trigger_df = text_df2text_entity_df_by_entity_match(\
-		input_df,\
-		entity_file = trigger_file,\
-		entity_type = trigger_type,\
-		sqlContext  = sqlContext)
-	text_trigger_df.cache()
-	print('generating record for each trigger textracted')
-	text_trigger_df = text_entity2text_single_entity(\
-		text_trigger_df,\
-		target_entity_type = trigger_type,\
-		replace_target_entity_by_wildcard = True,\
-		sqlContext = sqlContext)
-	text_trigger_df.cache()
-	text_trigger_df.registerTempTable('text_trigger_df')
-	output_df = sqlContext.sql(u"""
-		SELECT *, 
-		text_entity AS text_trigger
-		FROM text_trigger_df
-		""")
-	print('saving results to '+output_json)
-	os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-	output_df.write.json('temp')
-	os.system(u"""
-		hadoop fs -get temp ./
-		cat temp/* > """+output_json)
-	os.system(u"hadoop fs -rm -r "+output_json)
-	os.system(u"hadoop fs -cp -f temp "+output_json)
-	print('results saved to '+output_json)
-
-'''
-match a text to multi indicators for 
-multi-class classifiation labeling
-
-usage:
-
-rm input.json
-vi input.json
-i{"text":"my wife is coming"}
-{"text":"my husband is here"}
-{"text":"this is a test"}
-{"text":"Hi my son is here","sender":1}
-{"text":"dear Mrs Wang, your child here","sender":2}
-{"text":"a test","sender":3}
-
-rm indicator1.csv
-vi indicator1.csv
-imy wife
-
-rm indicator2.csv
-vi indicator2.csv
-imy husband
-
-from sms_utility_spark import *
-
-def positive_indicator_func1(input):
+def text_entity2text_entity_wildcard(input,\
+	entity_wildcard = 'entity'):
 	try:
-		return re.sub(' my son ', ' [my son] ', input)
+		return re.sub('\[[^\[\]]+\]', \
+			'_'+entity_wildcard+'_', \
+			input)
+	except:
+		return None
+
+'''
+given a list of words and a list of names, outoput a 
+text with all the names neighboring inside brackets
+
+usage:
+
+words = ["Hi","this","is","Jim","Wang","how","are","you","Mr","Sayed"]
+names = ["wang","sayed","jim"]
+
+print words_entity2text_entity(words, names,\
+	entity_wildcard = 'name')
+
+Hi this is [Jim Wang] how are you Mr [Sayed]
+'''
+def words_entity2text_entity(words, entities, \
+	nearby_entity_merge = True,\
+	entity_wildcard = None):
+	try:
+		words_name = ['['+word+']' \
+		if word.lower() in entities else word \
+		for word in words]
+		text_name = (' '.join(words_name)).strip()
+		if nearby_entity_merge:
+			text_name = re.sub('\] \[', ' ', text_name)
+		if entity_wildcard is not None:
+			text_name = text_entity2text_entity_wildcard(\
+				text_name,\
+				entity_wildcard = entity_wildcard)
+		return text_name
+	except:
+		return None
+
+'''
+input = ' good morning [dr] ahmad i m so sorry '
+text_entity2entity(input)
+'''
+def text_entity2entity(input):
+	try:
+		return re.sub('( \[|\] )', '', \
+		re.search(' \[.*\] ', input)\
+		.group()).strip()
+	except:
+		return None
+
+'''
+extract entities from text-entity
+
+usage:
+
+input = u' i work for [abu dhabi] bank and [abu dhabi] finance before this is jim smith from [dubai] islamic bank how are you '
+text_entity2entities(input)
+
+'''
+def text_entity2entities(input):
+	try:
+		output = [e.group() for e \
+			in re.finditer('\[[^\[\]]+\]', input)]
+		output=  [re.sub('(\[|\])', '', e).strip() for 
+			e in output]
+		if len(output) > 0:
+			return output
+		else:
+			return None
+	except:
+		return None 
+
+'''
+input = ' i work for rak bank and _location_ finance before this is _name_ from [_location_ islamic bank] how are you '
+entities = [u'abu dhabi', u'dubai']
+entity_type = 'location'
+
+text_wildcard_entity_recovery(input, \
+	entities, \
+	entity_type)
+
+text_wildcard_entity_recovery(input, \
+	entities, \
+	entity_type,\
+	only_recover_entities_in_bracket = True)
+
+
+output:
+u' i work for rak bank and abu dhabi finance before this is _name_ from [dubai islamic bank] how are you '
+'''
+
+def text_wildcard_entity_recovery(input, \
+	entities, \
+	entity_type,\
+	with_bracket = False):
+	try:
+		if isinstance(entities, list) is False:
+			entities = [entities]
+		text = input.split('_'+entity_type+'_')
+		if with_bracket is False:
+			for idx in range(len(entities)):
+				text[idx] = text[idx]+entities[idx]
+		else:
+			for idx in range(len(entities)):
+				text[idx] = text[idx]+'['+entities[idx]+']'
+		return ''.join(text)
 	except:
 		return input
 
-def positive_indicator_func2(input):
+'''
+input = ' i work for [_location_ bank] and _location_ finance before this is _name_ from [_location_ islamic bank] how are you '
+sub_entities = [u'rak', u'abu dhabi', u'dubai']
+sub_entity_type = 'location'
+
+text_entity_wildcard_subentity_recovery(input, \
+	sub_entities, \
+	sub_entity_type)
+'''
+def text_entity_wildcard_subentity_recovery(input, \
+	sub_entities, \
+	sub_entity_type):
 	try:
-		return re.sub(' your child ', ' [your child] ', input)
-	except:
-		return input
-
-psoitive_indicators_files = ['indicator1.csv',\
-	'indicator2.csv', None, None]
-
-psoitive_indicators_funcs = [\
-	None, None, 
-	positive_indicator_func1,\
-	positive_indicator_func2]
-
-text_json2text_indicators_json(\
-	input_json = 'input.json',\
-	output_json_file = 'output.json',\
-	psoitive_indicators_files = \
-	psoitive_indicators_files,\
-	psoitive_indicators_funcs = \
-	psoitive_indicators_funcs)
-
-usage:
-
-from sms_utility_spark import *
-
-text_json2text_indicators_json(input_json ='input.json',\
-	output_json_file = 'output.json',\
-	psoitive_indicators_funcs = [\
-	None, None, 
-	positive_indicator_func1,\
-	positive_indicator_func2])
-'''
-def text_json2text_indicators_json(\
-	input_json = None,\
-	input_df = None,\
-	output_json_file = None,\
-	psoitive_indicators_files = None,\
-	psoitive_indicators_funcs = None,\
-	mathc_entity_by_word = False,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	'''
-	loading data
-	'''
-	if input_json is not None:
-		print('loading input texts from '+input_json)
-		input_df = sqlContext.read.json(input_json)
-	if 'text_entity' not in input_df.columns:
-		input_df = input_df.withColumn('text_entity',\
-			udf(text_preprocess, StringType())\
-			('text'))
-	'''
-	match by indicators
-	'''
-	if psoitive_indicators_files is not None:
-		'''
-		build class database
-		'''
-		print('building indicator database for all classes')
-		sqlContext.sql(u"""
-			SELECT NULL AS entity, NULL AS label
-			""").registerTempTable('indicators_class')
-		for class_idx1, context_indicator_file in \
-			zip(range(len(psoitive_indicators_files)),\
-			psoitive_indicators_files):
-			class_idx = class_idx1+1
-			if context_indicator_file is not None:
-				print('loading the indicators from '+context_indicator_file\
-					+' as the '+str(class_idx)+'-th class indicator')
-				df_indicator = load_entities(context_indicator_file,\
-					return_format = 'df',\
-					sqlContext = sqlContext)
-				df_indicator = df_indicator.withColumn('label', lit(class_idx))
-				df_indicator.registerTempTable('indicators_class_new')
-				sqlContext.sql(u"""
-					SELECT *
-					FROM indicators_class_new
-					UNION ALL
-					SELECT *
-					FROM indicators_class
-					""").registerTempTable('indicators_class')
-		sqlContext.sql(u"""
-			SELECT DISTINCT entity, label
-			FROM indicators_class
-			WHERE entity IS NOT NULL 
-			AND label IS NOT NULL
-			""").registerTempTable('indicators_class')
-		print('saving the indicator-class label database')
-		os.system(u"""
-			hadoop fs -rm -r indicators_class.json
-			rm -r indicators_class.json
-			""")
-		sqlContext.sql(u"""
-			SELECT DISTINCT entity
-			FROM indicators_class
-			""").write.json('indicators_class.json')
-		'''
-		match multi-class indicators
-		'''
-		print('matching indicctors to texts')
-		input_indicator_df = text_json2text_entity_json(\
-			input_df = input_df,\
-			entity_file = 'indicators_class.json',\
-			mathc_entity_by_word = mathc_entity_by_word,\
-			entity_type = 'indicator',\
-			entity_surrounded_by_brackets = False,\
-			ignoare_entity = False,\
-			sqlContext  = sqlContext)
-		input_indicator_df.cache()
-		print('matching indicators to class labels')
-		input_indicator_df = input_indicator_df.withColumn('indicator', \
-			explode('indicator'))\
-			.withColumn('indicator', \
-			udf(lambda input: ' '+input+' ' if input is not None \
-			else None, StringType())\
-			('indicator'))
-		input_indicator_df.cache()
-		input_indicator_df.registerTempTable('input_indicator_df')
-		output_df_indicator = sqlContext.sql(u"""
-			SELECT DISTINCT 
-			input_indicator_df.text_entity,
-			input_indicator_df.indicator,
-			indicators_class.label
-			FROM input_indicator_df
-			JOIN indicators_class
-			ON indicators_class.entity 
-			= input_indicator_df.indicator
-			""")
-		output_df_indicator.cache()
-		output_df_indicator.registerTempTable(\
-			'text_entity_match_by_indicator')
-	else:
-		sqlContext.sql(u"""
-			SELECT NULL AS text_entity, 
-			NULL AS indicator,
-			NULL AS label
-			""").registerTempTable(\
-			'text_entity_match_by_indicator')
-	if psoitive_indicators_funcs is not None:
-		input_df.registerTempTable('input_df')
-		text_entity_df = sqlContext.sql(u"""
-			SELECT DISTINCT text_entity
-			FROM input_df
-			WHERE text_entity IS NOT NULL
-			""")
-		sqlContext.sql(u"""
-			SELECT NULL AS text_entity, 
-			NULL AS indicator,
-			NULL AS label
-			""").registerTempTable(\
-			'text_entity_match_by_func')
-		for class_idx1, psoitive_indicators_func in \
-			zip(range(len(psoitive_indicators_funcs)),\
-			psoitive_indicators_funcs):
-			if psoitive_indicators_func is not None:
-				class_idx = class_idx1+1
-				print('extracting the indicators by '\
-					+str(psoitive_indicators_func)\
-					+' as the '+str(class_idx)+'-th class indicator')
-				text_indicator_current = text_json2text_entity_json(\
-					input_df = text_entity_df,\
-					entity_extract_fun = psoitive_indicators_func,\
-					entity_type = 'indicator',\
-					entity_surrounded_by_brackets = False,\
-					sqlContext = sqlContext)\
-					.withColumn('indicator', explode('indicator'))\
-					.withColumn('label', lit(class_idx))
-				text_indicator_current.cache()
-				text_indicator_current.registerTempTable(\
-					'text_indicator_current')
-				sqlContext.sql(u"""
-					SELECT text_entity, indicator, label
-					FROM text_indicator_current
-					UNION ALL 
-					SELECT text_entity, indicator, label
-					FROM text_entity_match_by_func
-					""").registerTempTable(\
-					'text_entity_match_by_func')
-	else:
-		sqlContext.sql(u"""
-			SELECT NULL AS text_entity, 
-			NULL AS indicator,
-			NULL AS label
-			""").registerTempTable(\
-			'text_entity_match_by_func')
-	sqlContext.sql(u"""
-		SELECT * 
-		FROM text_entity_match_by_indicator
-		UNION ALL 
-		SELECT * 
-		FROM text_entity_match_by_func
-		""").registerTempTable('text_entity_indicator_match')
-	sqlContext.sql(u"""
-		SELECT DISTINCT * 
-		FROM text_entity_indicator_match
-		WHERE text_entity IS NOT NULL
-		AND indicator IS NOT NULL
-		AND label IS NOT NULL
-		""").withColumn('indicator', udf(\
-		lambda input: input.strip(), StringType())\
-		('indicator'))\
-		.registerTempTable(\
-		'text_entity_indicator_all')
-	input_df.registerTempTable('input_df')
-	output_df = sqlContext.sql(u"""
-		SELECT input_df.*, 
-		text_entity_indicator_all.indicator,
-		CASE 
-			WHEN text_entity_indicator_all.label
-			IS NOT NULL
-			THEN text_entity_indicator_all.label
-			ELSE 0
-		END AS label
-		FROM input_df
-		LEFT JOIN text_entity_indicator_all
-		ON text_entity_indicator_all.text_entity = 
-		input_df.text_entity
-		""")
-	if output_json_file is not None:
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		print('saving the results to '+output_json_file)
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json_file)
-		os.system('hadoop fs -rm -r '+output_json_file)
-		os.system('hadoop fs -cp -f temp '+output_json_file)
-	else:
-		return output_df
-
-'''
-matching the context of entities to label the entities
-in text_entity by matching to context indicator
-or using a context matching function
-
-usgae:
-
-1. matching to indicator csv
-
-rm input.json
-vi input.json
-i{"text_entity":" _start_ this is [jim] i am here _end_ "}
-{"text_entity":" _start_ dear [zhou] how are you regards [wang] _end_ "}
-
-rm indicator1.csv
-vi indicator1.csv
-ithis is [jim] i
-
-rm indicator2.csv
-vi indicator2.csv
-i dear [zhou] how 
-
-from sms_utility_spark import * 
-
-context_indicator_files = ['indicator1.csv',\
-	'indicator2.csv']
-
-text_entity2text_entity_context_indicator(\
-	input_json = 'input.json',\
-	output_json = 'output.json',
-	context_indicator_files = ['indicator1.csv',\
-	'indicator2.csv'],\
-	target_entity_context_wildcard = 'name',\
-	sqlContext = None)
-
-2. macth entities in a text_entity by a function
-
-usage:
-
-rm input.json
-vi input.json
-i{"text_entity":" _start_ my name is [jim] and you are [sayed] _end_ "}
-
-from sms_utility_spark import *
-
-def context_indicator_func(input):
-	try:
-		input = re.sub('\[[^\[\]]+\]', '_entity_', input)
-		return re.sub(' my name is _entity_ and ', \
-		' [my name is _entity_ and] ',\
-		input)
-	except: 
-		return input
-
-text_entity2text_entity_context_indicator(\
-	input_json = 'input.json',\
-	output_json = 'output.json',\
-	context_indicator_funcs = [context_indicator_func])
-'''
-def text_entity2text_entity_context_indicator(\
-	input_json,\
-	output_json = None,
-	context_indicator_files = None,\
-	context_indicator_funcs = None,\
-	mathc_entity_by_word = False,\
-	target_entity_type = 'entity',\
-	target_entity_context_wildcard = None,\
-	replace_target_entity_by_wildcard = False,\
-	ignoare_entity = True,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	'''
-	explode text_entity to text_single_entity
-	'''
-	print('loading the input text_entity from '+input_json)	
-	input_df = sqlContext.read.json(input_json)
-	print('loaded '+str(input_df.count())+' sms from '+input_json)
-	print('exploding the text_entity to text_single_entity')
-	output_df = text_entity2text_single_entity(input_df,\
-		target_entity_type = 'entity',\
-		replace_target_entity_by_wildcard = True,\
-		target_entity_context_wildcard = \
-		target_entity_context_wildcard,\
-		sqlContext = sqlContext)
-	output_df.cache()
-	print('detected '+str(output_df.count())+' entities')
-	'''
-	match to entity context indicator
-	'''
-	print('matching to entity context indicators')
-	output_df = text_json2text_indicators_json(\
-		input_df = output_df,\
-		psoitive_indicators_files = \
-		context_indicator_files,\
-		psoitive_indicators_funcs = \
-		context_indicator_funcs,\
-		sqlContext = sqlContext)
-	output_df.cache()
-	if replace_target_entity_by_wildcard is False:
-		print('recovering target entities to text_entity')
-		output_df = output_df.withColumn('text_entity',\
-			udf(lambda input, entities: \
-			text_wildcard_entity_recovery(input, \
+		output = text_wildcard_entity_recovery(input, \
+			entities = sub_entities, \
+			entity_type = sub_entity_type)
+		entities = text_entity2entities(output)
+		input = text_entity2text_entity_wildcard(\
+			input)
+		return text_wildcard_entity_recovery(input, \
 			entities, \
-			'entity',\
-			with_bracket = True))('text_entity', 'entity'))
-	output_df.cache()
-	if output_json is not None:		
-		print('saving results to '+output_json)
-		output_file_temp = 'temp'+str(random.randint(0, 10000000000))\
-			.zfill(10)
-		output_df.write.json(output_file_temp)
-		os.system(u"hadoop fs -get "+output_file_temp+u" ./")
-		os.system(u"cat "+output_file_temp+u"/*> "+output_json)
-		os.system('hadoop fs -rm -r '+output_file)
-		os.system('hadoop fs -cp -f '+output_file_temp+' '+output_json)
-		print('results saved to '+output_json)
-		os.system(u"hadoop fs -rm -r "+output_file_temp)
-	else:
-		return output_df
-
-
+			entity_type = 'entity',\
+			with_bracket = True)
+	except:
+		return input
 
 '''
-extract data/time entities from texts
+select the major element from an array
+
+usage:
+
+input = ['a', 'a', 'b', 'c']
+array_major(input)
+'''
+def array_major(input):
+    if input is None:
+        return None
+    if len(input) == 0:
+        return None
+    if len(list(set(input))) == 1:
+        return input[0]
+    try:
+        data = Counter(input)
+        return data.most_common(1)[0][0]
+    except:
+        return None
+
+'''
+return the entity from a list of entities with the largest score
 
 usage: 
 
-rm input.json
-vi input.json
-i{"text":"Good morning \n\nThis is Walid We talked last week about residence in hungary. \n\nI am  travelling to Budapest  Friday 16 Dec 10:00 AM 12/21/2018. \nCan we meet to discuss the availabil options. @"}
+entities = ['Jim', 'China']
+scores = [1.0, 0.5781889558]
 
-rm time_indicator.csv
-vi time_indicator.csv
-i_weekday_ 16 _month_ 10:00 AM
-12/21/2018
-morning
+max_entity_score(entities, scores)
+'''
+
+def max_entity_score(entities, scores):
+    try:
+        max_idx = np.argmax(scores)
+        return {'entity': entities[max_idx],\
+        'score': scores[max_idx]}
+    except:
+        return None
+
+'''
+input = u"456.5678.678 3274,678.567 w7485 10 1: 567.567"
+
+re_pattern = r'\d+((([\.\,]+)?\d+)+)?'
+
+extract_entity_by_re(input, re_pattern)
+
+re_pattern = '(wang|wan)'
+
+input = u" this is wang, and wan will come, but wangk is wrong"
+
+extract_entity_by_re(input, re_pattern)
+'''
+def extract_entity_by_re(input, re_pattern,\
+	replace_entity_by_wildcard = False,\
+	return_none_if_not_matched = False):
+	input_original = input
+	try:
+		if replace_entity_by_wildcard is True:
+			input = re.sub('\[[^\[\]]+\]', ' _entity_ ', input)
+			input = re.sub('\s+', ' ', input)
+		else:
+			input = re.sub('(\[|\])', '', input)
+		date_array = [e.group() \
+			for e in re.finditer(\
+			re_pattern,\
+			input)]
+		if len(date_array) == 0:
+			if return_none_if_not_matched is True:
+				return None
+			else:
+				return input_original
+		date_array.sort(key=len, reverse=True)
+		for entity in date_array:
+			#check if this number has been matched as a part of an entity
+			not_matched = [e.group() for e \
+				in re.finditer('(^|\])[^\[\]]+(\[|$)', input)]
+			for str_not_matched in not_matched:
+				if entity in str_not_matched:
+					str_not_matched1 = re.sub(entity, \
+					' ['+entity.strip()+'] ', str_not_matched)
+					input = re.sub(re.escape(str_not_matched), \
+					str_not_matched1, input)	
+		input = re.sub('\s+', ' ', input)	
+		return input
+	except:
+		return input_original
+
+'''
+extract number from text
+
+usage:
+
+from sms_utility_re import *
+
+text_preprocess(extract_number('10-10 -100 12.12.13/45/78/44 12, 12.0'))
+
+extract_date_number('10-10 -100 12.12.13/45/78/44 12, 12.0')
+
+extract_time_number('10-10 -100 12.12.13/45/78/44 12, 12:0')
+'''
+def extract_number(input):
+	return extract_entity_by_re(input, \
+		re_arabic_number)
+
+'''
+extract emails from text and put the into blackets 
+
+usage:
+
+input =  '978:887 my email is jywang.ieee@gmail.com but [ my company ] email is jingya.wang@pegassu.ae.   '
+print text2text_email(input)
+
+input = u"4896 cgx Xdsg@453.com "
+input = text2text_email(input)
+input = text_entity2text_entity_wildcard(input, 'email')
+input = extract_number(input)
+input = text_entity2text_entity_wildcard(input, 'number')
+input = text_preprocess(input)
+print(input)
+'''
+def extract_email(input):
+	return extract_entity_by_re(input, \
+		regex_email)
+
+def text2text_email(input):
+	return extract_entity_by_re(input, \
+		regex_email)
+
+'''
+def text2text_email(input):
+	try:
+		input = re.sub('(\[|\])', ' ', input)		
+		emails = [email[0] \
+			for email in re.findall(regex_email, input) \
+			if not email[0].startswith('//')]
+		for email in list(set(emails)):
+			input = re.sub(email, ' ['+email+'] ', input) 
+		return input
+	except:
+		return None
+'''
+
+'''
+extract the first name from a name merged
+usage: 
+
+extract_first_name('Jim  Wang')
+
+extract_first_name('Jim')
+'''
+def extract_first_name(input):
+	try:
+		input = re.sub('[^\w]+', ' ', input)
+		return input.split(' ')[0].strip()
+	except:
+		return None
+
+'''
+rm date_time.csv
+vi date_time.csv
+i13/12/2016 at 16:20
+13-DEC-2016 15:00
+December 16th 2016 at 10:30
+12-Jan-2017 at 18:00
+13/12/2016 at 13:45:00 
+Dec 13 2016 4:20PM
+December 13th 2016 at 20:30
+Tuesday, 13 Dec 2016 at 9:30am
+15/12/2016 at 10:15:00
+December 13th 2016 at 09:30
+13th of December at 5:00pm
+this week
+next friday
+last month
+today
 tomorrow
 
-from sms_utility_spark import *
+date_time_indicators = date_time_indicator_extract('date_time.csv')
 
-text_json2text_datetime_json(input_json = 'input.json',\
-	output_json = 'output.json',\
-	week_day_csv = 'week_day.csv',\
-	month_csv = 'month.csv',\
-	data_time_indicator_csv = 'time_indicator.csv')
-'''
-def text_json2text_datetime_json(input_json = None,\
-	input_df = None,\
-	output_json = None,\
-	week_day_csv = 'week_day.csv',\
-	month_csv = 'month.csv',\
-	data_time_indicator_csv = 'date_time_indicator.csv',\
-	data_time_indicator_match_by_word = False,\
-	data_time_indicator_funct = None,\
-	sub_entity_type_repalce_by_wildcard = False,\
-	entity_type_repalce_by_wildcard = False,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	if input_json is not None:
-		print('loading data from '+input_json)
-		input_df = sqlContext.read.json(input_json)
-	#extract other number	
-	if 'number' not in input_df.columns:
-		print('extracting other number')
-		output_df = text_df2text_entity_df_by_func(\
-			input_df,\
-			extract_number,\
-			entity_type = 'number',
-			extract_entity_from_original_text = True,\
-			entity_type_repalce_by_wildcard = True,\
-			sqlContext = sqlContext)
-	else:
-		output_df = input_df
-	#extract weekday
-	print('extracting the weekdays by matching to '\
-		+week_day_csv)
-	output_df = text_df2text_entity_df_by_entity_match(\
-		output_df,\
-		entity_file = week_day_csv,\
-		entity_type = 'weekday',\
-		entity_type_repalce_by_wildcard = True,\
-		sqlContext  = sqlContext)
-	#extract month
-	print('extracting the months by matching to '\
-		+month_csv)
-	output_df = text_df2text_entity_df_by_entity_match(\
-		output_df,\
-		entity_file = month_csv,\
-		entity_type = 'month',\
-		entity_type_repalce_by_wildcard = True,\
-		sqlContext  = sqlContext)
-	#match to date time indicator
-	print('extracing time by matching to')
-	output_df = text_df2text_entity_df_by_entity_match(\
-		output_df,\
-		entity_file = data_time_indicator_csv,\
-		entity_type = 'datetime',\
-		mathc_entity_by_word =\
-		data_time_indicator_match_by_word, \
-		ignoare_entity = False,\
-		nearby_entity_merge = True,\
-		sqlContext  = sqlContext)
-	#recover time
-	if sub_entity_type_repalce_by_wildcard is False:
-		print('recovering the time entities from number/weekday/month')
-		if 'number' in output_df.columns:
-			output_df = output_df.withColumn('text_entity',\
-			udf(lambda input, entities:\
-			text_wildcard_entity_recovery(input, \
-			entities, \
-			'number'))('text_entity', 'number'))
-		if 'weekday' in output_df.columns:
-			output_df = output_df.withColumn('text_entity',\
-			udf(lambda input, entities:\
-			text_wildcard_entity_recovery(input, \
-			entities, \
-			'weekday'))('text_entity', 'weekday'))
-		if 'month' in output_df.columns:
-			output_df = output_df.withColumn('text_entity',\
-			udf(lambda input, entities:\
-			text_wildcard_entity_recovery(input, \
-			entities, \
-			'month'))('text_entity', 'month'))
-		output_df = output_df.withColumn('datetime', \
-			udf(text_entity2entities, ArrayType(StringType()))\
-			('text_entity'))
-	if entity_type_repalce_by_wildcard is True:
-		output_df = output_df.withColumn('text_entity',\
-			udf(lambda input: text_entity2text_entity_wildcard(\
-			input, 'datetime'), \
-			StringType())('text_entity'))
-	if output_json is not None:
-		print('saving results to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
-		os.system('hadoop fs -rm -r '+output_json)
-		os.system('hadoop fs -cp -f temp '+output_json)
-	else:
-		return output_df
+for t in date_time_indicators:
+	print t
 
 '''
-convert a preprocessed text to a list of word indeces for 
-dl training and prediction
 
-usage:
+re_number = '[0-9]+'
+re_month = '(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)'
+re_weekday = '(sunday|sun|monday|mon|tuesday|tues|wednesday|wed|thursday|thurs|friday|fri|saturday|sat)'
+re_next = '(next|last)'
+re_day = '(today|tomorrow|yesterday|year|month|week|hour|minute|season|weekend|sec|seconds|second)'
 
-rm input.json
-vi input.json
-i{"text":"a test","text_preprocessed":" _start_ a test _end_ "}
-{"text":"dear Mrs Wang, Sayed here","text_preprocessed":" _start_ dear mrs _name_ _puntuation_ _name_ here _end_ ","indicator":" dear mrs _name_ _puntuation_ ","label":2}
-{"text":"I am Halima's husband, howre are you","text_preprocessed":" _start_ i am _name_ _puntuation_ s husband _puntuation_ how are you _end_ ","indicator":" i am _name_ _puntuation_ s husband ","label":1}
-
-from sms_utility_spark import *
-
-prepare_multiclass_dl_input('input.json',\
-	'output.json')
-
-rm input.json
-vi input.json
-i{"text":"I am Halima's husband, howre are you"}
-{"text":"dear Mrs Wang, Sayed here"}
-{"text":"a test"}
-
-prepare_multiclass_dl_input('input.json',\
-	'output.json')
-'''
-def prepare_multiclass_dl_input(input_json_file,\
-	output_json_file = None,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	print('loading text data from '+input_json_file)
-	input_df = sqlContext.read.json(input_json_file)
-	if 'text_entity' not in input_df.columns:
-		print('convering the text to text_entity')
-		input_df = input_df.withColumn('text_entity',\
-			udf(lambda input: text_preprocess(input), \
-			StringType())('text'))
-	'''
-	if 'label' in input_df.columns:
-		print('labels detected')
-		input_df = input_df.withColumn('label',\
-			udf(lambda input: 0 if input is None else input,\
-			IntegerType())('label'))
-	else:
-		print('labels not detected')
-	'''		
-	print('convering the text_entity to word indeces')
-	output_df = input_df.withColumn('words',\
-		udf(lambda input: process_text2words(input, \
-		ignoare_entity = False), \
-		ArrayType(StringType()))('text_entity'))\
-		.withColumn('word_idx',\
-		udf(word_list2word_idx, ArrayType(IntegerType()))\
-		('words'))\
-		.drop('words')
-	output_df.cache()
-	if output_json_file is not None:		
-		print('saving the results to '+output_json_file)	
-		os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json_file)
-		os.system('hadoop fs -rm -r '+output_json_file)
-		os.system('hadoop fs -cp -f temp '+output_json_file)
-	else:
-		return output_df
+def date_time_indicator_extract(date_csv):
+	try:
+		output = []
+		for indicator in open(date_csv).readlines():
+			indicator = indicator.strip().lower()
+			indicator = re.escape(indicator).lower()
+			indicator = re.sub(re_number, re_number, indicator)
+			indicator = re.sub(re_month, re_month, indicator)
+			indicator = re.sub(re_weekday, re_weekday, indicator)
+			indicator = re.sub(re_day, re_day, indicator)
+			indicator = re.sub(re_next, re_next, indicator)
+			output.append(indicator)
+		return list(set(output))
+	except:
+		return None
 
 '''
-prepare_entity_dl_input
+input = "December 13th 2016 at 20:30 December 13th 2016 at 20:30 and 15/12/2016 at 10:15:00 but Dec 13 2016 4:20PM"
+extract_date_time(input, date_time_indicators)
 
-usage: 
-
-rm input.json
-vi input.json
-i{"text":"this is a test","text_entity":" _start_ this is a test _end_ "}
-{"text":"how are you, regards, jim smith","text_entity":" _start_ how are you _puntuation_ regards _puntuation_ [jim smith] _end_ ","entity":["jim smith"]}
-{"text":"dear Jane, my name is jim","text_entity":" _start_ dear [jane] _puntuation_ my name is [jim] _end_ ","entity":["jane","jim"]}
-{"text":"good morning, sayed here from Abu Dhabi","text_entity":" _start_ good morning _puntuation_ [sayed] here from [abu] dhabi _end_ ","entity":["sayed","abu"]}
-
-from sms_utility_spark import * 
-
-prepare_entity_dl_input('input.json',\
-	output_file = 'output.json')
-
-usage:
-
-rm input.json
-vi input.json
-i{"text_entity":" _start_ this is [jim] how are you _end_ ","indicator":" this is _entity_ ","label":1}
-{"text_entity":" _start_ it is [jim] _end_ ","label":0}
-
-from sms_utility_spark import * 
-
-prepare_entity_dl_input('input.json',\
-	output_file = 'output.json')
+'[december 13th 2016 at 20:30] [december 13th 2016 at 20:30] and [15/12/2016 at 10:15]:00 but [dec 13 2016 4:20pm]'
 '''
-def prepare_entity_dl_input(input_file,\
-	output_file = None,\
-	negative_number = None,\
-	sqlContext = None):
-	if sqlContext is None:
-		sqlContext = sqlContext_local
-	print('loading input data from '+input_file)
-	input_df = sqlContext.read.json(input_file)
-	print('loaed '+str(input_df.count())+' records from '+input_file)
-	if 'label' in input_df.columns:
-		print('prepare the input for dl entity model training')
-		output_df = input_df
-		if negative_number is not None:
-			output_df.registerTempTable('output_df')
-			output_df = sqlContext.sql(u"""
-				SELECT * FROM output_df
-				WHERE label != 0
-				UNION ALL 
-				SELECT * FROM output_df
-				WHERE label = 0
-				LIMIT """+str(negative_number))
-			output_df.cache()
-	else:
-		print('prepare the input for dl entity model prediction')
-		output_df = text_entity2text_single_entity(input_df,\
-			target_entity_type = 'entity',\
-			sqlContext = sqlContext)
-	output_df.cache()
-	output_df.registerTempTable('output_df')
-	output_df = sqlContext.sql(u"""
-		SELECT *
-		FROM output_df
-		WHERE text_entity IS NOT NULL
-		AND entity IS NOT NULL
-		""").withColumn('context_word_idx',\
-		udf(lambda input: \
-		preprocessed_text_entity2context_idx(input),\
-		MapType(StringType(), ArrayType(IntegerType()))\
-		)('text_entity'))
-	output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
-		.zfill(10)
-	output_df.write.json(output_df_temp)
-	sqlContext.read.json(output_df_temp)\
-		.registerTempTable('temp')
-	output_df = sqlContext.sql(u"""
-			SELECT *,
-			context_word_idx.left_word_idx,
-			context_word_idx.entity_word_idx,
-			context_word_idx.right_word_idx
-			FROM temp
-			WHERE text_entity IS NOT NULL  
-			AND entity IS NOT NULL
-			""").drop('context_word_idx')
-	if output_file is not None:
-		print('saving results to '+output_file)
-		output_file_temp = 'temp'+str(random.randint(0, 10000000000))\
-			.zfill(10)
-		output_df.write.json(output_file_temp)
-		os.system(u"hadoop fs -get "+output_file_temp+u" ./")
-		os.system(u"cat "+output_file_temp+u"/*> "+output_file)
-		os.system('hadoop fs -rm -r '+output_file)
-		os.system('hadoop fs -cp -f '+output_file_temp+' '+output_file)
-		print('results saved to '+output_file)
-		os.system(u"hadoop fs -rm -r "+output_file_temp)
-	os.system(u"hadoop fs -rm -r "+output_df_temp)
-	return output_df
+def extract_date_time(input, date_time_indicators):
+	entities = []
+	input = re.sub('(\[|\])', '', input.lower())
+	for indicator in date_time_indicators:
+		try:
+			entity = re.search(indicator, input).group()
+			input = re.sub(entity, '['+entity+']', input)
+		except:
+			pass
+	return input
 
-######################sms_utility_spark.py######################	
+'''
+'''
+def replace_puntuation(input):
+	try:
+		return re.sub('(\s)*_puntuation_(\s)*', ' ', input).strip()
+	except:
+		return None
+################sms_utility_re.py################
