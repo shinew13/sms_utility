@@ -299,57 +299,52 @@ i{'text':' this ia an email jingx@gmgn.com 24r&234 P00 '}
 hadoop fs -rm -r input.json
 hadoop fs -put input.json ./
 
-text_json2text_wild_json(
+text_json2text_entity_wild_re_json(
 	input_json = 'input.json',
 	output_json = 'output.json',
-	re_funs = [text2text_email],
-	entities = ['email'],
-	sqlContext = sqlContext)
-
+	entity_res = [re_arabic_number, regex_email],
+	enitty_names = ['number', 'email'])
 '''
-def text_json2text_wild_json(re_funs,
-	entities,
-	input_json = None,
-	input_df = None,
-	output_json = None,
+def text_json2text_entity_wild_re_json(input_json,
+	output_json,
+	entity_res,
+	enitty_names,
 	sqlContext = None):
 	if sqlContext is None:
 		sqlContext = sqlContext_local
-	if input_json is not None:
-		input_df = sqlContext.read.json(input_json)
-	print('loaded '+str(input_df.count())+' records from '+input_json)
-	output_df = input_df
-	for entity, re_funs in zip(entities, re_funs):
-		output_df = output_df.withColumn('text', \
-			udf(re_funs, StringType())('text'))
-		output_df = output_df.withColumn('text', \
-			udf(lambda input: \
-			text_entity2text_entity_wildcard(\
-			input,\
-			entity_wildcard = entity),\
-			StringType())('text'))
+	print('loading data from '+input_json)
+	output_df = sqlContext.read.json(input_json)
+	print('extracging entities from sms')
+	for entity_re, entity_name \
+		in zip(entity_res, enitty_names):
+		print('extracting entities of '+entity_name)
+		output_df = output_df.withColumn('text',
+			udf(lambda input: re.sub(entity_re,\
+			' _'+entity_name+'_ ',\
+			StringType()))('text'))
 		output_df.cache()
-	if output_json is not None:
-		print('saving results to '+output_json)
-		output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
-			.zfill(10)
-		output_df.write.json(output_df_temp)
-		os.system(u"hadoop fs -get "+output_df_temp+u" ./")
-		os.system(u"cat ./"+output_df_temp+u"/* > "+output_json)
-		os.system(u"hadoop fs -cp -f "+output_df_temp+u" "+output_json)
-		os.system(u"hadoop fs -rm -r "+output_df_temp)
-	return output_df
+	print('saving results to '+output_json)
+	os.system(u"""
+		hadoop fs -rm -r temp
+		rm -r temp
+		""")
+	output_df.write.json('temp')
+	os.system(u"""
+		hadoop fs -get temp ./
+		cat temp/* > """+output_json)
+	os.system(u'hadoop fs -rm -r '+output_json)
+	os.system(u'hadoop fs -mv temp '+output_json)
 
 '''
 usage: 
 
-text_json2text_entity_re_json(\
+text_json2entity_re_json(\
 	input_json = '/data/jim/sms_business.json',\
 	output_json = '/data/jim/clinic_dr_name.json',\
 	entity_extract_re_funcs = [extract_dr_name],\
 	enitty_names = ['dr_name'])
 '''
-def text_json2text_entity_re_json(input_json,\
+def text_json2entity_re_json(input_json,\
 	output_json,\
 	entity_extract_re_funcs,\
 	enitty_names,\
@@ -363,8 +358,7 @@ def text_json2text_entity_re_json(input_json,\
 		in zip(entity_extract_re_funcs, enitty_names):
 		print('extracting entities by '+str(func))
 		output_df = output_df.withColumn(entity_name,\
-			udf(func, \
-			StringType())('text'))
+			udf(func, StringType())('text'))
 		output_df.cache()
 	print('saving results to '+output_json)
 	os.system(u"""
