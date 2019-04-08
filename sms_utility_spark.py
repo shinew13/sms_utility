@@ -320,7 +320,7 @@ def text_json2text_entity_wild_re_json(input_json,
 	for entity_re, entity_name \
 		in zip(entity_res, enitty_names):
 		print('extracting entities of '+entity_name)
-		output_df = output_df.withColumn('text',
+		output_df = output_df.withColumn('text_entity',
 			udf(lambda input: re.sub(entity_re,\
 			' _'+entity_name+'_ ',\
 			input), StringType())('text'))
