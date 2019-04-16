@@ -520,7 +520,6 @@ def text_df2text_entity_df_by_entity_match(\
 		input_df.cache()	
 	'''
 	match the entities by a fucntion
-	'''
 	if mathc_entity_by_word is False:
 		entities = load_entities(entity_file,\
 			return_format = 'list',\
@@ -540,6 +539,7 @@ def text_df2text_entity_df_by_entity_match(\
 			entity_type_repalce_by_wildcard = \
 			entity_type_repalce_by_wildcard,\
 			sqlContext = sqlContext)
+	'''
 	if mathc_entity_by_word is True:
 		df_entity = load_entities(entity_file,\
 			return_format = 'df',\
@@ -612,7 +612,6 @@ def text_df2text_entity_df_by_entity_match(\
 		input_entity_candidate2.cache()
 		input_entity_candidate2.registerTempTable(\
 			'text_entity_indicator_candidate')
-		print('merging matched entities to text_entity')
 		output_entity = sqlContext.sql(u"""
 			SELECT input.*,
 			text_entity_indicator_candidate.entity
@@ -621,17 +620,44 @@ def text_df2text_entity_df_by_entity_match(\
 			LEFT JOIN text_entity_indicator_candidate
 			ON text_entity_indicator_candidate.text_entity
 			= input.text_entity
-			""").withColumn('text_entity',\
-			udf(lambda input, entities: \
-			marge_entity2preprocessed_text(input, \
-			entities,\
-			nearby_entity_merge = nearby_entity_merge), StringType())\
-			('text_entity', 'candidate_entities'))\
-			.drop('candidate_entities')\
-			.withColumn(entity_type,\
-			udf(text_entity2entities, ArrayType(StringType()))\
+			""")
+		output_entity.cache()
+	else:
+		'''
+		there is another way to generate entity by matching 
+		text to entity by hashing and set intersation
+		the input must have text_entity and candidate_entities
+		'''
+		entities = load_entities(entity_file,\
+			return_format = 'list',\
+			ignore_space_at_start_and_end = False,\
+			sqlContext = sqlContext)
+		entities_set = set(entities)
+		entiteis_not = [e for e in entities_set if '_not_' in e]
+		find_candidate_entities_by_set = \
+			lambda input: list(entities_set.intersection(\
+			set(text_entity2text_entity_subset(input))))+\
+			entiteis_not
+		output_entity = input_df.withColumn('candidate_entities',\
+			udf(find_candidate_entities_by_set, \
+			ArrayType(StringType()))\
 			('text_entity'))
 		output_entity.cache()
+	'''
+	merge the candidate entiteis to the text_entity
+	'''
+	print('merging matched entities to text_entity')
+	output_entity = output_entity.withColumn('text_entity',\
+		udf(lambda input, entities: \
+		marge_entity2preprocessed_text(input, \
+		entities, nearby_entity_merge = nearby_entity_merge), \
+		StringType())\
+		('text_entity', 'candidate_entities'))\
+		.drop('candidate_entities')\
+		.withColumn(entity_type,\
+		udf(text_entity2entities, ArrayType(StringType()))\
+		('text_entity'))
+	output_entity.cache()
 	if entity_type_repalce_by_wildcard is True:
 		output_entity = output_entity\
 			.withColumn('text_entity',\
