@@ -925,7 +925,7 @@ def extract_entity_by_re(input, re_pattern,\
 	return_none_if_not_matched = False):
 	try:
 		###remove the brakets
-		input = re.sub('(\[|\])', '', input)
+		input = re.sub('(\[|\])', ' ', input)
 		input_original = input
 	except:
 		return input
