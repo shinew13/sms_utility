@@ -1,5 +1,6 @@
 ################sms_utility_re.py################
 import re
+import regex
 from hashlib import md5
 from collections import *
 
@@ -165,36 +166,31 @@ def indicator_preprocess(indicator, \
 	except:
 		return None
 
-
 '''
-https://www.tutorialspoint.com/python/python_sets.htm
+convert a text_entity to a list of entity candidats for hasing search for
+a larget set of entities
+
+usage:
 from sms_utility_re import *
-entities = [str(i) for i in range(0,1000000)] + ['1 _not_ 2']
-entities_not = [e for e in entities if ' _not_ ' in e]
+input = ' _start_ this is jim and yan liang _end_ '
+output = text_entity2text_entity_subset(input)
 
+entities = ['jim', 'yan liang', 'abu _not_ abu dhabi']
 entities_set = set(entities)
-
-input = ' 1 4 7 7 xx '
-
-import time
-start = time.time()
-input_word = set(input.strip().split(' '))
-entities_input = list(entities_set & input_word) + entities_not
-marge_entity2preprocessed_text(\
-	input,\
-	entities_input,\
-	nearby_entity_merge = True)
-print(time.time()-start)
-
-import time
-start = time.time()
-marge_entity2preprocessed_text(\
-	input,\
-	entities,\
-	nearby_entity_merge = True)
-print(time.time()-start)
+entiteis_not = [e for e in entities if '_not_' in e]
+list(entities_set.intersection(set(output)))+entiteis_not
 '''
-
+def text_entity2text_entity_subset(input):
+	try:
+		output = []
+		num_word = len(input.strip().split(' '))
+		for num_word1 in range(1,num_word+1):
+			output += [e.group().strip() for e \
+				in regex.finditer(r' ([^ ]+ ){'+str(num_word1)+'}', \
+				input, overlapped=True)]
+		return output
+	except:
+		return None
 
 '''
 usage:
