@@ -165,6 +165,37 @@ def indicator_preprocess(indicator, \
 	except:
 		return None
 
+
+'''
+https://www.tutorialspoint.com/python/python_sets.htm
+from sms_utility_re import *
+entities = [str(i) for i in range(0,1000000)] + ['1 _not_ 2']
+entities_not = [e for e in entities if ' _not_ ' in e]
+
+entities_set = set(entities)
+
+input = ' 1 4 7 7 xx '
+
+import time
+start = time.time()
+input_word = set(input.strip().split(' '))
+entities_input = list(entities_set & input_word) + entities_not
+marge_entity2preprocessed_text(\
+	input,\
+	entities_input,\
+	nearby_entity_merge = True)
+print(time.time()-start)
+
+import time
+start = time.time()
+marge_entity2preprocessed_text(\
+	input,\
+	entities,\
+	nearby_entity_merge = True)
+print(time.time()-start)
+'''
+
+
 '''
 usage:
 
@@ -892,7 +923,12 @@ extract_entity_by_re(input, re_pattern)
 def extract_entity_by_re(input, re_pattern,\
 	replace_entity_by_wildcard = False,\
 	return_none_if_not_matched = False):
-	input_original = input
+	try:
+		###remove the brakets
+		input = re.sub('(\[|\])', '', input)
+		input_original = input
+	except:
+		return input
 	try:
 		if replace_entity_by_wildcard is True:
 			input = re.sub('\[[^\[\]]+\]', ' _entity_ ', input)
@@ -901,8 +937,7 @@ def extract_entity_by_re(input, re_pattern,\
 			input = re.sub('(\[|\])', '', input)
 		date_array = [e.group() \
 			for e in re.finditer(\
-			re_pattern,\
-			input)]
+			re_pattern,	input)]
 		if len(date_array) == 0:
 			if return_none_if_not_matched is True:
 				return None
@@ -936,6 +971,8 @@ text_preprocess(extract_number('10-10 -100 12.12.13/45/78/44 12, 12.0'))
 extract_date_number('10-10 -100 12.12.13/45/78/44 12, 12.0')
 
 extract_time_number('10-10 -100 12.12.13/45/78/44 12, 12:0')
+
+extract_number('xgn [gsg] igmd')
 '''
 def extract_number(input):
 	return extract_entity_by_re(input, \
@@ -956,6 +993,11 @@ input = extract_number(input)
 input = text_entity2text_entity_wildcard(input, 'number')
 input = text_preprocess(input)
 print(input)
+
+
+from sms_utility_re import *
+
+extract_email(' gnsg [gdsg]  nsgdsg')
 '''
 def extract_email(input):
 	return extract_entity_by_re(input, \
