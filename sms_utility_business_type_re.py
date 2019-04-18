@@ -1,4 +1,4 @@
-##############sms_utility_business_type_re##############
+##############sms_utility_re_business_type.py##############
 import re
 
 '''
@@ -78,4 +78,4 @@ def text2business_type(input):
 			return 'government'
 	except:
 		return None
-##############sms_utility_business_type_re##############
+##############sms_utility_re_business_type.py##############
