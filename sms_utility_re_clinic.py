@@ -440,6 +440,15 @@ def extract_patient_name(input):
 			return output
 	except:
 		pass
+	try:
+		output = re.search(r"Dear [A-Za-z ]{4,40} \, your Appointment with Dr", input).group()
+		output = re.sub(r'^Dear | \, your Appointment with Dr$', '',output)
+		output = output.strip().lower()
+		output = re.sub(r"patient", '', output)
+		if len(output) >= 1:
+			return output
+	except:
+		pass
 	return None
 
 '''
