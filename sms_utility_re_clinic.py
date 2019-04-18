@@ -441,8 +441,8 @@ def extract_patient_name(input):
 	except:
 		pass
 	try:
-		output = re.search(r"Dear [A-Za-z ]{4,40} \, your Appointment with Dr", input).group()
-		output = re.sub(r'^Dear | \, your Appointment with Dr$', '',output)
+		output = re.search(r"Dear [A-Za-z ]{4,40}\, your Appointment with Dr", input).group()
+		output = re.sub(r'^Dear |\, your Appointment with Dr$', '',output)
 		output = output.strip().lower()
 		output = re.sub(r"patient", '', output)
 		if len(output) >= 1:
@@ -452,7 +452,7 @@ def extract_patient_name(input):
 	return None
 
 '''
-input = u"Dear Patient, Your appointment with Dr. Serag Mohd. in DENTAL Department on Mar  7 2016  2:30PM at GMC Hospital is confirmed. (Visit Thumbay Pharmacy 24/7)"
-print extract_clinic_name(input)
+input = u"Dear Nukhba , your Appointment with Dr. Dr. HARSHVARDHAN at ASTER GARDENS MEDICAL  CENTRE is confirmed on 15/12/2016 at 19:40. Kindly reach the recept"
+extract_patient_name(input)
 '''
 ###################sms_utility_re_clinic.py###################
