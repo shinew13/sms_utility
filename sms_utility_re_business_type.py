@@ -55,24 +55,27 @@ def id2business_type(input):
 usage:
 
 input = 'Dear parent, your child has been abscent today.'
+input = u"""
+There was a purchase transaction of AED  373.75 on your Card XXXX7983 at SPINNEYS                 SHARJAH      AE on 12/12/2016 1:09:13 AM. Total available balance is AED 25873.29.
+"""
 text2business_type(input)
 '''
 def text2business_type(input):
 	try:
 		input = input.strip().lower()
 		if bool(re.search(\
-			'dear(\s+)parent|your(\s+)child|tuition(\s+)fee|dear(\s)student([^a-z]|$)', \
+			r'dear(\s+)parent|your(\s+)child|tuition(\s+)fee|dear(\s)student([^a-z]|$)', \
 			input)):
 			return 'education'
-		if bool(re.search('dear patient|dear pt([^a-z]|$)', \
+		if bool(re.search(r'dear patient|dear pt([^a-z]|$)', \
 			input))\
 			or (\
-			bool(re.search('medical|radiology|clinic|dental|physcian|surgery|dr\.|healing center', input))\
+			bool(re.search(r'medical|radiology|clinic|dental|physcian|surgery|dr\.|healing center', input))\
 			and \
-			bool(re.search('appointment|book|remind|confirm', input))):
+			bool(re.search(r'appointment|book|remind|confirm', input))):
 			return 'clinic'
-		if bool(re.search('([^a-z]|^)(salary|debit|credit|transaction|withdrawn|loan|purchase|deposit|spen(t|d))([^a-z]|$)', input)) \
-			and bool(re.search('([^a-z]|^)(bank|finance|avail|atm|account|a/c|a\\c|(available|avl\.)(\s+)(balance|limit))([^a-z]|$)', input)):
+		if bool(re.search(r'([^a-z]|^)(salary|debit|credit|transaction|withdrawn|loan|purchase|deposit|spen(t|d))([^a-z]|$)', input)) \
+			and bool(re.search(r'([^a-z]|^)(bank|finance|avail|atm|account|a\/c|a\\c|((available|avl\.)(\s+)(balance|limit)))([^a-z]|$)', input)):
 			return 'finance'
 		if bool(re.search('\.gov\.ae', input)):
 			return 'government'
