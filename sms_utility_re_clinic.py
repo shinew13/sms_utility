@@ -1,3 +1,4 @@
+###################sms_utility_re_clinic.py###################
 import re
 
 '''
@@ -441,5 +442,8 @@ def extract_patient_name(input):
 		pass
 	return None
 
+'''
 input = u"Dear Patient, Your appointment with Dr. Serag Mohd. in DENTAL Department on Mar  7 2016  2:30PM at GMC Hospital is confirmed. (Visit Thumbay Pharmacy 24/7)"
 print extract_clinic_name(input)
+'''
+###################sms_utility_re_clinic.py###################
