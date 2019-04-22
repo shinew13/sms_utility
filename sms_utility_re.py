@@ -3,6 +3,7 @@ import re
 import regex
 from hashlib import md5
 from collections import *
+import numpy
 
 #https://en.wikipedia.org/wiki/List_of_Unicode_characters
 #https://en.wikipedia.org/wiki/Arabic_script_in_Unicode
@@ -174,17 +175,24 @@ usage:
 from sms_utility_re import *
 input = ' _start_ this is jim and yan liang _end_ '
 output = text_entity2text_entity_subset(input)
+output = text_entity2text_entity_subset(input,\
+	max_number_word = 100)
 
 entities = ['jim', 'yan liang', 'abu _not_ abu dhabi']
 entities_set = set(entities)
 entiteis_not = [e for e in entities if '_not_' in e]
 list(entities_set.intersection(set(output)))+entiteis_not
 '''
-def text_entity2text_entity_subset(input):
+def text_entity2text_entity_subset(input,\
+	max_number_word = None):
 	try:
 		output = []
 		num_word = len(input.strip().split(' '))
-		for num_word1 in range(1,num_word+1):
+		if max_number_word is None:
+			max_number_word = num_word
+		else:
+			max_number_word = numpy.minimum(num_word,max_number_word)
+		for num_word1 in range(1,max_number_word+1):
 			output += [e.group().strip() for e \
 				in regex.finditer(r' ([^ ]+ ){'+str(num_word1)+'}', \
 				input, overlapped=True)]
