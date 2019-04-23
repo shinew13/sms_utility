@@ -142,20 +142,6 @@ document_type = load_entities(\
 	return_format = 'list')
 document_type = set(document_type)
 
-'''
-time 
-'''
-date_time_indicator = load_entities(\
-	entity_file = 'date_time_indicator.csv',\
-	return_format = 'list')
-
-'''
-person
-'''
-person_indicator = load_entities(\
-	entity_file = 'person_indicator.csv',\
-	return_format = 'list')
-
 max_word_indicator = numpy.max([
 	name_max_word,
 	title_max_word,
