@@ -9,7 +9,7 @@ import numpy
 #https://en.wikipedia.org/wiki/Arabic_script_in_Unicode
 re_puntuation = r"(\!|\"|\#|\$|\%|\&|\'|\(|\)|\*|\+|\,|\-|\.|\/|\:|\;|\<|\=|\>|\?|\@)+"
 
-re_arabic_number = u'[\d\u0660-\u0669\u06F0-\u06F9]+(([\.\,\:\-\\\/\u066A-\u066C][\d\u0660-\u0669\u06F0-\u06F9]+)+)?'
+re_arabic_number = u'[\+\-\$\%]*[\d\u0660-\u0669\u06F0-\u06F9]+(([\.\,\:\-\\\/\u066A-\u066C][\d\u0660-\u0669\u06F0-\u06F9]+)+)?[\+\-\$\%]*'
 re_arabic_putuation = u'[\u060C-\u060F\u061F\u066D\u06DD\u06DE\u06E9\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@]+'
 re_arabic_non_letter = u'[^\u0600-\u06FF\u0750-\u077f\w]+'
 re_newline = u'([\n\r]\s*)'
