@@ -77,7 +77,7 @@ def text_preprocess(input,\
 	ignore_puntuation = False,\
 	ignore_number = False,\
 	ignore_linebreak = True,\
-	ignore_email = True,\
+	ignore_email = False,\
 	ignore_start_end_space_indicator = False,\
 	scape_entity = False,\
 	seperate_arabic_ending = False):
