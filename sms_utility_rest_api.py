@@ -206,6 +206,15 @@ text2text_comb_entity(input, \
 	entities,\
 	sub_entities = ['name', 'title'],\
 	comb_entity_indicator = person_indicator)
+
+input = u"this is jim from dubai llc and i live in abu dhabi island "
+entities = entity_matching(input)
+
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['location', 'placetype', \
+	'orgnizationtype', 'name'],\
+	comb_entity_indicator = place_indicator)
 '''
 def text2text_comb_entity(input, \
 	entities,\
