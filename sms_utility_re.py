@@ -193,7 +193,7 @@ def text_entity2text_entity_subset(input,\
 		else:
 			max_number_word = numpy.minimum(num_word,max_number_word)
 		for num_word1 in range(1,max_number_word+1):
-			output += [e.group().strip() for e \
+			output += [e.group() for e \
 				in regex.finditer(r' ([^ ]+ ){'+str(num_word1)+'}', \
 				input, overlapped=True)]
 		return output
