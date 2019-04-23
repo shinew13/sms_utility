@@ -142,6 +142,20 @@ document_type = load_entities(\
 	return_format = 'list')
 document_type = set(document_type)
 
+'''
+time 
+'''
+date_time_indicator = load_entities(\
+	entity_file = 'date_time_indicator.csv',\
+	return_format = 'list')
+
+'''
+person
+'''
+person_indicator = load_entities(\
+	entity_file = 'person_indicator.csv',\
+	return_format = 'list')
+
 max_word_indicator = numpy.max([
 	name_max_word,
 	title_max_word,
@@ -192,55 +206,54 @@ def entity_matching(input):
 usage:
 
 input = u"i will see you on monday march 3th 2019, this month morning is also ok"
-#entities = entity_matching(input)
 entities = {'month':['march'],\
 	'weekday':['monday'],\
 	'number':['3', '2019']}
-text2text_time(input, entities)
-'''
-date_time_indicator = load_entities(\
-	entity_file = 'date_time_indicator.csv',\
-	return_format = 'list')
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['number', 'month', 'weekday'],\
+	comb_entity_indicator = date_time_indicator)
 
-def text2text_time(input, entities):
+input = u"this is dr wang and my sister miss yan will come my email is wang@xx.com"
+entities = {'number': [], 'email': ['wang@xx.com'], 'name': ['wang', 'yan'], 'location': [], 'orgnization': [], 'title': ['dr', 'sister'], 'role': ['sister'], 'currency': [], 'weekday': [], 'month': [], 'placetype': [], 'orgnizationtype': [], 'documenttype': [], 'documentformat': []}
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['name', 'title'],\
+	comb_entity_indicator = person_indicator)
+'''
+def text2text_comb_entity(input, \
+	entities,\
+	sub_entities,\
+	comb_entity_indicator):
 	try:
 		text_entity = text_preprocess(input)
+		ordered_entities = {}
 		'''
-		replace the month by wild card
+		matching the sub_entities
 		'''
-		text_entity = marge_entity2preprocessed_text(\
-			text_entity, \
-			entities['month'])
-		month1 = text_entity2entities(text_entity)
-		text_entity = text_entity2text_entity_wildcard(\
-			text_entity,\
-			entity_wildcard = 'month')
-		'''
-		replace the weekday by wild card
-		'''
-		text_entity = marge_entity2preprocessed_text(\
-			text_entity, \
-			entities['weekday'])
-		weekday1 = text_entity2entities(text_entity)
-		text_entity = text_entity2text_entity_wildcard(\
-			text_entity,\
-			entity_wildcard = 'weekday')
+		for sub_entity in sub_entities:
+			if sub_entity in ['number', 'email']:
+				ordered_entities[sub_entity] = entities[sub_entity]
+			else:
+				text_entity = marge_entity2preprocessed_text(\
+					text_entity, \
+					entities[sub_entity])
+				ordered_entities[sub_entity] = text_entity2entities(\
+					text_entity)
+				text_entity = text_entity2text_entity_wildcard(\
+					text_entity,\
+					entity_wildcard = sub_entity)
 		'''
 		merge number, weekday and month to the text entity
 		'''
 		text_entity = marge_entity2preprocessed_text(\
-			text_entity, date_time_indicator, \
+			text_entity, comb_entity_indicator, \
 			nearby_entity_merge = True)
-		###recover the sub-entities
-		text_entity = text_entity_wildcard_subentity_recovery(text_entity, \
-			entities['number'], \
-			'number')
-		text_entity = text_entity_wildcard_subentity_recovery(text_entity, \
-			weekday1, \
-			'weekday')
-		text_entity = text_entity_wildcard_subentity_recovery(text_entity, \
-			month1, \
-			'month')
+		for sub_entity in sub_entities:
+			###recover the sub-entities
+			text_entity = text_entity_wildcard_subentity_recovery(text_entity, \
+				ordered_entities[sub_entity], \
+				sub_entity)
 		return text_entity
 	except:
 		return None
