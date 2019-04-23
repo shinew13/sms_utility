@@ -72,6 +72,7 @@ text_preprocess(u"6438 eam999.gn@gex.com _number_ and _email_",
 text_preprocess(u"this xg_gex@324.com is 888:888 a _number_ and _,_ is a _email_ ",\
 	ignore_email = False)
 
+text_preprocess(u" this is gxgn@gma.com this $123")
 '''
 def text_preprocess(input,\
 	ignore_puntuation = False,\
@@ -923,8 +924,14 @@ re_pattern = '(wang|wan)'
 input = u" this is wang, and wan will come, but wangk is wrong"
 
 extract_entity_by_re(input, re_pattern)
+
+extract_entity_by_re(u" xx $1231 xxx", re_arabic_number)
+
+extract_entity_by_re(u" xx gdgn@gds.com te ", regex_email)
+
 '''
-def extract_entity_by_re(input, re_pattern,\
+def extract_entity_by_re(input, \
+	re_pattern,\
 	replace_entity_by_wildcard = False,\
 	return_none_if_not_matched = False):
 	try:
@@ -954,7 +961,7 @@ def extract_entity_by_re(input, re_pattern,\
 				in re.finditer('(^|\])[^\[\]]+(\[|$)', input)]
 			for str_not_matched in not_matched:
 				if entity in str_not_matched:
-					str_not_matched1 = re.sub(entity, \
+					str_not_matched1 = re.sub(re.escape(entity), \
 					' ['+entity.strip()+'] ', str_not_matched)
 					input = re.sub(re.escape(str_not_matched), \
 					str_not_matched1, input)	
@@ -977,6 +984,8 @@ extract_date_number('10-10 -100 12.12.13/45/78/44 12, 12.0')
 extract_time_number('10-10 -100 12.12.13/45/78/44 12, 12:0')
 
 extract_number('xgn [gsg] igmd')
+
+extract_number(' $843 ')
 '''
 def extract_number(input):
 	return extract_entity_by_re(input, \
