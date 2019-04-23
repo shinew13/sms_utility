@@ -12,7 +12,8 @@ entity_csv_update(\
 
 name_en_all = load_entities(\
 	entity_file = 'name_en_all.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 
 name_en_all = set(name_en_all)
 name_max_word = sorted([len(w.strip().split(' ')) \
@@ -29,7 +30,8 @@ entity_csv_update(\
 
 location_en_all = load_entities(\
 	entity_file = 'location_en_all.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 
 location_en_all = set(location_en_all)
 location_max_word = sorted([len(w.strip().split(' ')) \
@@ -46,7 +48,8 @@ entity_csv_update(\
 
 title_fun_all = load_entities(\
 	entity_file = 'title_fun_all.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 
 title_fun_all = set(title_fun_all)
 title_max_word = sorted([len(w.strip().split(' ')) \
@@ -63,7 +66,8 @@ entity_csv_update(\
 
 role_all = load_entities(\
 	entity_file = 'role_all.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 
 role_all = set(role_all)
 role_max_word = sorted([len(w.strip().split(' ')) \
@@ -75,7 +79,8 @@ orgnization
 '''
 orgnization_en_all = load_entities(\
 	entity_file = 'orgnization_en_all.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 
 orgnization_en_all = set(orgnization_en_all)
 orgnization_max_word = sorted([len(w.strip().split(' ')) \
@@ -91,7 +96,8 @@ entity_csv_update(\
 	output_file_csv = 'currency_all.csv')
 currency_all = load_entities(\
 	entity_file = 'currency_all.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 currency_all = set(currency_all)
 
 '''
@@ -99,7 +105,8 @@ week_day
 '''
 week_day = load_entities(\
 	entity_file = 'week_day.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 week_day = set(week_day)
 
 '''
@@ -107,7 +114,8 @@ month
 '''
 month = load_entities(\
 	entity_file = 'month.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 month = set(month)
 
 '''
@@ -115,7 +123,8 @@ orgnization_type
 '''
 orgnization_type = load_entities(\
 	entity_file = 'orgnization_type.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 orgnization_type = set(orgnization_type)
 
 '''
@@ -123,7 +132,8 @@ orgnization_type
 '''
 place_type = load_entities(\
 	entity_file = 'place_type.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 place_type = set(place_type)
 
 '''
@@ -131,7 +141,8 @@ document_format
 '''
 document_format = load_entities(\
 	entity_file = 'document_format.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 document_format = set(document_format)
 
 '''
@@ -139,7 +150,8 @@ document_type
 '''
 document_type = load_entities(\
 	entity_file = 'document_type.csv',\
-	return_format = 'list')
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
 document_type = set(document_type)
 
 max_word_indicator = numpy.max([
@@ -209,12 +221,25 @@ text2text_comb_entity(input, \
 
 input = u"this is jim from dubai llc and i live in abu dhabi island "
 entities = entity_matching(input)
-
 text2text_comb_entity(input, \
 	entities,\
 	sub_entities = ['location', 'placetype', \
 	'orgnizationtype', 'name'],\
 	comb_entity_indicator = place_indicator)
+
+from sms_utility_rest_api import * 
+
+person_indicator = load_entities(\
+	entity_file = 'person_indicator.csv',\
+	return_format = 'list',\
+	ignore_space_at_start_and_end = True)
+
+input = u" this is jim wang from "
+entities = entity_matching(input)
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['name', 'title'],\
+	comb_entity_indicator = person_indicator)
 '''
 def text2text_comb_entity(input, \
 	entities,\
@@ -241,9 +266,11 @@ def text2text_comb_entity(input, \
 		'''
 		merge number, weekday and month to the text entity
 		'''
+		print(text_entity)
 		text_entity = marge_entity2preprocessed_text(\
 			text_entity, comb_entity_indicator, \
 			nearby_entity_merge = True)
+		print(text_entity)
 		for sub_entity in sub_entities:
 			###recover the sub-entities
 			text_entity = text_entity_wildcard_subentity_recovery(text_entity, \
