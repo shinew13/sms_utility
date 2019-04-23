@@ -126,6 +126,22 @@ place_type = load_entities(\
 	return_format = 'list')
 place_type = set(place_type)
 
+'''
+document_format
+'''
+document_format = load_entities(\
+	entity_file = 'document_format.csv',\
+	return_format = 'list')
+document_format = set(document_format)
+
+'''
+document_type
+'''
+document_type = load_entities(\
+	entity_file = 'document_type.csv',\
+	return_format = 'list')
+document_type = set(document_type)
+
 max_word_indicator = numpy.max([
 	name_max_word,
 	title_max_word,
@@ -166,6 +182,8 @@ def entity_matching(input):
 		output['month'] = [w.strip() for w in list(month & text_entity_set)]
 		output['placetype'] = [w.strip() for w in list(place_type & text_entity_set)]
 		output['orgnizationtype'] = [w.strip() for w in list(orgnization_type & text_entity_set)]
+		output['documenttype'] = [w.strip() for w in list(document_type & text_entity_set)]
+		output['documentformat'] = [w.strip() for w in list(document_format & text_entity_set)]
 		return output		
 	except:
 		return None
