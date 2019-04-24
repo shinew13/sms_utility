@@ -1294,7 +1294,7 @@ def text_entites2text_entity_context_wild_list(\
 	entities, \
 	target_entity, \
 	context_entities_wildcard,\
-	context_entities_nearby_merge = True,\
+	context_entities_nearby_merge = None,\
 	input_text_preprocessed = True):
 	try:
 		if input_text_preprocessed is not True:
@@ -1321,6 +1321,8 @@ def text_entites2text_entity_context_wild_list(\
 			target_entity in context_entities_wildcard,\
 			entity_type = target_entity)
 		return text_entity_list
-	except:
+	except Exception as e:
+		print(str(e))
 		return None
+
 ################sms_utility_re.py################
