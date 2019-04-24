@@ -1122,4 +1122,205 @@ def replace_puntuation(input):
 		return re.sub('(\s)*_puntuation_(\s)*', ' ', input).strip()
 	except:
 		return None
+
+#############the following is for the rest api of single message processing
+'''
+giving the input text and the entity lists, output the 
+processed text with the target entity 
+
+usage:
+
+input = u"this is jim wang"
+entities = {'name':['jim','wang']}
+target_entity = 'name'
+target_entity_nearby_merge = True
+
+text_entities2text_entity(input,\
+	entities,\
+	target_entity,\
+	target_entity_nearby_merge = True)
+'''
+def text_entities2text_entity(input,\
+	entities,\
+	target_entity,\
+	target_entity_nearby_merge = False):
+	try:
+		text_entity = text_preprocess(input)
+		text_entity = marge_entity2preprocessed_text(\
+			text_entity,\
+			entitis = entities[target_entity],\
+			nearby_entity_merge = \
+			target_entity_nearby_merge)
+		return text_entity
+	except:
+		return None
+
+'''
+usage:
+
+input = u"i will see you on monday march 3th 2019, this month morning is also ok"
+entities = {'month':['march'],\
+	'weekday':['monday'],\
+	'number':['3', '2019']}
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['number', 'month', 'weekday'],\
+	comb_entity_indicator = date_time_indicator)
+
+input = u"this is dr wang and my sister miss yan will come my email is wang@xx.com"
+entities = {'number': [], 'email': ['wang@xx.com'], 'name': ['wang', 'yan'], 'location': [], 'orgnization': [], 'title': ['dr', 'sister'], 'role': ['sister'], 'currency': [], 'weekday': [], 'month': [], 'placetype': [], 'orgnizationtype': [], 'documenttype': [], 'documentformat': []}
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['name', 'title'],\
+	comb_entity_indicator = person_indicator)
+
+input = u"this is jim from dubai llc and i live in abu dhabi island "
+entities = entity_matching(input)
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['location', 'placetype', \
+	'orgnizationtype', 'name'],\
+	comb_entity_indicator = place_indicator)
+
+from sms_utility_rest_api import * 
+
+input = u" this is dr jim wang from pegasus"
+entities = {'name': ['jim','wang'], 'title':['dr']}
+person_indicator = ['_title_', 'miss _name_', '_title_ _name_', '_title_ _puntuation_ _title_ _puntuation_ _name_', '_name_ al _name_', 'al _puntuation_ _name_', '_title_ _puntuation_ _name_', '_name_', 'miss _puntuation_ _name_']
+text2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['name', 'title'],\
+	comb_entity_indicator = person_indicator)
+'''
+def text_entities2text_comb_entity(input, \
+	entities,\
+	sub_entities,\
+	comb_entity_indicator):
+	try:
+		text_entity = text_preprocess(input)
+		ordered_entities = {}
+		'''
+		matching the sub_entities
+		'''
+		for sub_entity in sub_entities:
+			if sub_entity in ['number', 'email']:
+				ordered_entities[sub_entity] = entities[sub_entity]
+			else:
+				text_entity = marge_entity2preprocessed_text(\
+					text_entity, \
+					entities[sub_entity])
+				ordered_entities[sub_entity] = text_entity2entities(\
+					text_entity)
+				text_entity = text_entity2text_entity_wildcard(\
+					text_entity,\
+					entity_wildcard = sub_entity)
+		'''
+		merge number, weekday and month to the text entity
+		'''
+		text_entity = marge_entity2preprocessed_text(\
+			text_entity, comb_entity_indicator, \
+			nearby_entity_merge = True)
+		for sub_entity in sub_entities:
+			###recover the sub-entities
+			text_entity = text_entity_wildcard_subentity_recovery(text_entity, \
+				ordered_entities[sub_entity], \
+				sub_entity)
+		return text_entity
+	except:
+		return None
+
+'''
+from sms_utility_re import *
+usage:
+
+input = u"this is jim wang , i live in dubai uad"
+entities = {"number":[],"email":[],"name":["jim","wang"],"location":["dubai"],"orgnization":[],"title":[],"role":[],"currency":[],"weekday":[],"month":[],"placetype":[],"orgnizationtype":[],"documenttype":[],"documentformat":[]}
+entities_context_wildcard = ['name', 'location']
+nearby_entity_merge = [True, False]
+
+text_entities2text_entities_wildcard(input,\
+	entities,\
+	entities_context_wildcard,\
+	nearby_entity_merge = None)
+'''
+def text_entities2text_entities_wildcard(\
+	input,\
+	entities,\
+	entities_context_wildcard,\
+	nearby_entity_merge = None,\
+	input_text_preprocessed = False):
+	try:
+		if nearby_entity_merge is None:
+			nearby_entity_merge = \
+			len(entities_context_wildcard)*[False]
+		if input_text_preprocessed:
+			text_entity = input
+		else:
+			text_entity = text_preprocess(input)
+		for entity, nearby_entity_merge1 \
+			in zip(entities_context_wildcard, \
+			nearby_entity_merge):
+			text_entity = marge_entity2preprocessed_text(\
+				text_entity,\
+				entitis = entities[entity],\
+				nearby_entity_merge = nearby_entity_merge1)
+			text_entity = text_entity2text_entity_wildcard(\
+				text_entity,\
+				entity_wildcard = entity)
+		return text_entity
+	except:
+		return None
+
+'''
+from sms_utility_re import *
+
+input = u" _start_ dear mr [jim wang] i am at dubai regards [sayed ahmed] _end_ "
+entities = {"name": ["ahmed","sayed","jim","wang"],"location": ["dubai"],"title": ["mr"]}
+target_entity = 'name'
+target_entity_nearby_merge = True
+context_entities_wildcard = ['location', 'title', 'name']
+context_entities_nearby_merge = [True, True, True]
+
+output = text_entites2text_entity_context_wild_list(\
+	input, \
+	entities, \
+	target_entity, \
+	context_entities_wildcard,\
+	context_entities_nearby_merge = \
+	context_entities_nearby_merge)
+'''
+def text_entites2text_entity_context_wild_list(\
+	input, \
+	entities, \
+	target_entity, \
+	context_entities_wildcard,\
+	context_entities_nearby_merge = True,\
+	input_text_preprocessed = True):
+	try:
+		if input_text_preprocessed is not True:
+			input = text_preprocess(input)
+		target_entity_list = text_entity2entities(input)
+		text_entity = text_entity2text_entity_wildcard(\
+			input,\
+			target_entity)
+		###
+		text_entity = text_entities2text_entities_wildcard(\
+			text_entity,\
+			entities = entities,\
+			entities_context_wildcard = context_entities_wildcard,\
+			nearby_entity_merge = \
+			context_entities_nearby_merge,\
+			input_text_preprocessed = True)
+		text_entity = text_wildcard_entity_recovery(text_entity, \
+			entities = target_entity_list, \
+			entity_type = target_entity, \
+			with_bracket = True)
+		text_entity_list = text_entity2entity_context_list(\
+			text_entity, \
+			context_entity_replacy_by_wildcard = \
+			target_entity in context_entities_wildcard,\
+			entity_type = target_entity)
+		return text_entity_list
+	except:
+		return None
 ################sms_utility_re.py################
