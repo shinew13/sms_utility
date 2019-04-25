@@ -30,6 +30,6 @@ text_entities_struct_comb = {\
 	'money': fields.List(fields.String)\
 	}
 
-text_entities_struct_full = \
-	text_entities_struct.update(text_entities_struct_comb)
+text_entities_struct_full = text_entities_struct.copy()
+text_entities_struct_full.update(text_entities_struct_comb)
 ##############sms_utility_rest_api.py##############
