@@ -141,6 +141,7 @@ sender_name_context4 = \
 sender_name_context5 = 	\
 	r' '+re_this_is+r' '\
 	+r'(_title_ )*_entity_ '\
+	+r'(_puntuation_ )*'\
 	+'('+re_talk_beginning+'|'\
 	+re_hello+'|'\
 	+re_missyou+'|'\
