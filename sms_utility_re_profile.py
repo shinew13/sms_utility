@@ -121,11 +121,15 @@ text_entity2text_sender_name_context(' [jim] here from china ')
 text_entity2text_sender_name_context(' this is [jim] here ')
 text_entity2text_sender_name_context(\
 	' good regards dr _puntuation_ [jim] _end_ ')
+
+text_entity2text_sender_name_context(\
+	' this is _name_ _puntuation_ s _title_ _puntuation_ [jim] ')
 '''
 re_sender_name = [\
 	r' (regards|regard|rgd) (_title_ )*(_puntuation_ )*_entity_ (_puntuation_ )*_end_ ',\
 	r' _entity_ here from ',\
-	r' (this is|i am|im|i _puntuation_ m) (_title_ )*_entity_ (here|from|of) '
+	r' (this is|i am|im|i _puntuation_ m) (_title_ )*_entity_ (here|from|of|_end_) ',\
+	r' (this is|i am|im|i _puntuation_ m) (_name_ _puntuation_ s _title_ (_puntuation_ )*)(_title_ )*_entity_ ',\
 	]
 def text_entity2text_sender_name_context(input):
 	for pattern in re_sender_name:
