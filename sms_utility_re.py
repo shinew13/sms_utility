@@ -1360,4 +1360,38 @@ def text_entity_categorization(input,
 		return None
 	except:
 		return None
+
+'''
+matching a text_entity to indicator and fucntions
+
+usage:
+
+from sms_utility_re import * 
+from sms_utility_re_event import * 
+
+input = u" _start_ i will be moving to _location_ "
+
+text_categorization(input, 
+	indicator_func = travel_traveler_sender_match,\
+	indicator_list = ['i will be moving'])
+'''
+def text_categorization(input, 
+	indicator_func = None,\
+	indicator_list = None):
+	try:
+		if indicator_func is not None:
+			indicator1 = text_entity2entity(\
+				indicator_func(input))
+			if indicator1 is not None:
+				return indicator1
+		if indicator_list is not None:
+			indicator2 = text_entity2entity(\
+				marge_entity2preprocessed_text(\
+				input, indicator_list, \
+				nearby_entity_merge = True))
+			if indicator2 is not None:
+				return indicator2
+		return None
+	except:
+		return None
 ################sms_utility_re.py################
