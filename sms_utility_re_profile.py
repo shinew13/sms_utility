@@ -224,6 +224,69 @@ def receiver_is_senders_entity(input):
 	return input
 
 '''
+receiver title
+
+usage:
+
+input = u" _start hi _entity_ _name_ how are you _end_ "
+text_entity2text_receiver_title_indicator(input)
+'''
+re_receiver_title_indicator1 = \
+	' _start_ ('+re_my+' )?'\
+	+'('+re_dear+' )?'\
+	+'_entity_ '\
+	+'(_puntuation_ )*'\
+	+'(_name_ )*'\
+	+'(_puntuation_ )*'\
+	+'('+re_talk_beginning+'|'\
+	+re_hello+'|'\
+	+re_missyou+'|'\
+	+'_end_) '
+
+re_receiver_title_indicator2 = \
+	' ('+re_hello+') '\
+	+'(_puntuation_ )*'\
+	+'('+re_my+' )?('+re_dear+' )?'\
+	+'_entity_ '\
+	+'(_puntuation_ )*'\
+	+'(_name_ )*'\
+	+'(_puntuation_ )*'\
+	+'('+re_talk_beginning+'|'\
+	+re_hello+'|'\
+	+re_missyou+'|'\
+	+'_puntuation_) '
+
+re_receiver_title_indicator3 = \
+	' ('+re_missyou+') '\
+	+'(_puntuation_ )*'\
+	+'('+re_my+' )?('+re_dear+' )?'\
+	+'_entity_ '\
+	+'(_puntuation_ )*'\
+	+'(_name_ )*'\
+	+'(_puntuation_ )*'\
+	+'('+re_talk_beginning+'|'\
+	+re_hello+'|'\
+	+re_missyou+'|'\
+	+'_puntuation_) '
+
+re_receiver_title_indicator_all = [\
+	re_receiver_title_indicator1,\
+	re_receiver_title_indicator2,\
+	re_receiver_title_indicator3,\
+	re_receiver_is_senders_entity4\
+	]
+
+def text_entity2text_receiver_title_indicator(input):
+	for pattern in re_receiver_title_indicator_all:
+		output = extract_entity_by_re(input, \
+			pattern,\
+			replace_entity_by_wildcard = True,\
+			return_none_if_not_matched = True)
+		if output is not None:
+			return output
+	return input
+
+'''
 re_title = '(boss|student)'
 receiver_title_match(re_title, 'boss, good morning')
 receiver_title_match(re_title, 'hi, my lovely students')
