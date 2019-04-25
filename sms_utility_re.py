@@ -1,4 +1,8 @@
 ################sms_utility_re.py################
+'''
+https://github.com/vi3k6i5/flashtext
+https://medium.com/@Alibaba_Cloud/why-you-should-use-flashtext-instead-of-regex-for-data-analysis-960a0dc96c6a
+'''
 import re
 import regex
 from hashlib import md5
@@ -1176,18 +1180,16 @@ text2text_comb_entity(input, \
 
 input = u"this is jim from dubai llc and i live in abu dhabi island "
 entities = entity_matching(input)
-text2text_comb_entity(input, \
+text_entities2text_comb_entity(input, \
 	entities,\
 	sub_entities = ['location', 'placetype', \
 	'orgnizationtype', 'name'],\
 	comb_entity_indicator = place_indicator)
 
-from sms_utility_rest_api import * 
-
 input = u" this is dr jim wang from pegasus"
 entities = {'name': ['jim','wang'], 'title':['dr']}
 person_indicator = ['_title_', 'miss _name_', '_title_ _name_', '_title_ _puntuation_ _title_ _puntuation_ _name_', '_name_ al _name_', 'al _puntuation_ _name_', '_title_ _puntuation_ _name_', '_name_', 'miss _puntuation_ _name_']
-text2text_comb_entity(input, \
+text_entities2text_comb_entity(input, \
 	entities,\
 	sub_entities = ['name', 'title'],\
 	comb_entity_indicator = person_indicator)
@@ -1295,7 +1297,8 @@ def text_entites2text_entity_context_wild_list(\
 	target_entity, \
 	context_entities_wildcard,\
 	context_entities_nearby_merge = None,\
-	input_text_preprocessed = True):
+	input_text_preprocessed = True,\
+	context_target_entity_replacy_by_wildcard = True):
 	try:
 		if input_text_preprocessed is not True:
 			input = text_preprocess(input)
@@ -1318,7 +1321,8 @@ def text_entites2text_entity_context_wild_list(\
 		text_entity_list = text_entity2entity_context_list(\
 			text_entity, \
 			context_entity_replacy_by_wildcard = \
-			target_entity in context_entities_wildcard,\
+			target_entity in context_entities_wildcard or \
+			context_target_entity_replacy_by_wildcard,\
 			entity_type = target_entity)
 		return text_entity_list
 	except Exception as e:
