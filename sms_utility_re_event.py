@@ -114,7 +114,7 @@ travel_from_location_context_match(input)
 input = u" leave today to _place_ from the _entity_ "
 travel_from_location_context_match(input)
 
-input = u" go to _place_ from the _entity_ "
+input = u"  i will travel from _entity_  "
 travel_from_location_context_match(input)
 '''
 
