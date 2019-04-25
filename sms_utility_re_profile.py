@@ -39,7 +39,6 @@ re_positive_status = r'(good|wanderful|exellent|not bad|great|interesting|lovely
 re_positive_act = r'(love|loves|loving|like|likes|care|cares|respect|glorify|crazy about|crazy for|crazy over|in love with|pray|bless|glorify|praise|thank|honor|kiss|miss|admire|agree|support|trust|believe|wish|enjoy|respect|value)'
 re_negative_act = r'(hate|hates|hating|worry|worrying|worries|mad about|doubt|afraid of|fear|fuck|fucked|fuk|loss|lost|angry|disagree|laugh at|against)'
 
-
 re_dr = r'(dr|mr|mrs|ms|prof|miss)'
 '''
 from sms_utility_re_profile import *
@@ -117,20 +116,42 @@ extract sener name context
 
 usage:
 from sms_utility_re_profile import *
+
 text_entity2text_sender_name_context(' [jim] here from china ')
 text_entity2text_sender_name_context(' this is [jim] here ')
 text_entity2text_sender_name_context(\
-	' good regards dr _puntuation_ [jim] _end_ ')
+	' this is _entity_ i ')
 
 text_entity2text_sender_name_context(\
-	' this is _name_ _puntuation_ s _title_ _puntuation_ [jim] ')
+	' this is _name_ _puntuation_ s _title_ _puntuation_ _entity_ ')
 '''
+re_this_is = r'(this is|i am|im|i _puntuation_ m|my name is)'
+sender_name_context1 = 	\
+	r' (regards|regard|rgd) '\
+	+r'(_title_ )*(_puntuation_ )*_entity_ (_puntuation_ )*_end_ '
+sender_name_context2 = 	\
+	r' _entity_ here from '
+sender_name_context3 = 	\
+	r' '+re_this_is+r' '\
+	+r'(_title_ )*_entity_ '\
+	+r'(here|from|of|_end_) '
+sender_name_context4 = \
+	r' '+re_this_is+r' '\
+	+r'(_name_ _puntuation_ s _title_ (_puntuation_ )*)(_title_ )*_entity_ '
+sender_name_context5 = 	\
+	r' '+re_this_is+r' '\
+	+r'(_title_ )*_entity_ '\
+	+'('+re_talk_beginning+'|'\
+	+re_hello+'|'\
+	+re_missyou+'|'\
+	+'_end_) '
+
 re_sender_name = [\
-	r' (regards|regard|rgd) (_title_ )*(_puntuation_ )*_entity_ (_puntuation_ )*_end_ ',\
-	r' _entity_ here from ',\
-	r' (this is|i am|im|i _puntuation_ m) (_title_ )*_entity_ (here|from|of|_end_) ',\
-	r' (this is|i am|im|i _puntuation_ m) (_name_ _puntuation_ s _title_ (_puntuation_ )*)(_title_ )*_entity_ ',\
-	]
+	sender_name_context1,\
+	sender_name_context2,\
+	sender_name_context3,\
+	sender_name_context4,\
+	sender_name_context5]
 def text_entity2text_sender_name_context(input):
 	for pattern in re_sender_name:
 		output = extract_entity_by_re(input, \
