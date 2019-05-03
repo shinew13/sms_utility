@@ -1127,7 +1127,10 @@ def replace_puntuation(input):
 	except:
 		return None
 
-#############the following is for the rest api of single message processing
+'''
+the following is for the rest api of single message processing
+'''
+
 '''
 giving the input text and the entity lists, output the 
 processed text with the target entity 
@@ -1193,6 +1196,13 @@ text_entities2text_comb_entity(input, \
 	entities,\
 	sub_entities = ['name', 'title'],\
 	comb_entity_indicator = person_indicator)
+
+input = u" 100 million aed"
+entities = {'currency': ['aed'], 'number':['100']}
+text_entities2text_comb_entity(input, \
+	entities,\
+	sub_entities = ['number', 'currency'],\
+	comb_entity_indicator = money_indicator)
 '''
 def text_entities2text_comb_entity(input, \
 	entities,\
