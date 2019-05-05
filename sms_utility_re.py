@@ -10,8 +10,8 @@ import numpy
 
 try:
 	import regex
-except:
-	pass
+except Exception as e:
+	print(str(e))
 
 #https://en.wikipedia.org/wiki/List_of_Unicode_characters
 #https://en.wikipedia.org/wiki/Arabic_script_in_Unicode
