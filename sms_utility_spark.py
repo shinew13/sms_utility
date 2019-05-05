@@ -1841,6 +1841,7 @@ prepare_multiclass_dl_input('input.json',\
 '''
 def prepare_multiclass_dl_input(input_json_file,\
 	output_json_file = None,\
+	negative_number = None,\
 	sqlContext = None):
 	if sqlContext is None:
 		sqlContext = sqlContext_local
@@ -1869,6 +1870,15 @@ def prepare_multiclass_dl_input(input_json_file,\
 		udf(word_list2word_idx, ArrayType(IntegerType()))\
 		('words'))\
 		.drop('words')
+	if negative_number is not None:
+		output_df.registerTempTable('output_df')
+		output_df = sqlContext.sql(u"""
+			SELECT * FROM output_df
+			WHERE label != 0
+			UNION ALL 
+			SELECT * FROM output_df
+			WHERE label = 0 
+			LIMIT """ + str(negative_number))
 	output_df.cache()
 	if output_json_file is not None:		
 		print('saving the results to '+output_json_file)	
