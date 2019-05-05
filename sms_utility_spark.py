@@ -523,7 +523,30 @@ def text_df2text_entity_df_by_entity_match(\
 			'text_entity',\
 			udf(text_preprocess, StringType())\
 			('text'))
-		input_df.cache()	
+		input_df.cache()
+	'''
+	###	match the entities by a fucntion	
+	if mathc_entity_by_word is False:
+		entities = load_entities(entity_file,\
+			return_format = 'list',\
+			ignore_space_at_start_and_end = False,\
+			sqlContext = sqlContext)
+		entity_extract_fun = lambda input: \
+			marge_entity2preprocessed_text(\
+			input,\
+			entities, \
+			nearby_entity_merge = nearby_entity_merge)
+		output_entity = text_df2text_entity_df_by_func(\
+			input_df,\
+			entity_extract_fun,\
+			entity_type = entity_type,
+			extract_entity_from_original_text = False,\
+			nearby_entity_merge = nearby_entity_merge,\
+			entity_type_repalce_by_wildcard = \
+			entity_type_repalce_by_wildcard,\
+			sqlContext = sqlContext)
+		output_entity.cache()
+	'''
 	if mathc_entity_by_word is True:
 		df_entity = load_entities(entity_file,\
 			return_format = 'df',\
@@ -608,50 +631,32 @@ def text_df2text_entity_df_by_entity_match(\
 		output_entity.cache()
 	else:
 		'''
-		#####
 		there is another way to generate entity by matching 
 		text to entity by hashing and set intersation
 		the input must have text_entity and candidate_entities
 		but this method needs regex
-		#####
+		'''
 		print('matching enities by set intersection')
 		entities = load_entities(entity_file,\
 			return_format = 'list',\
 			ignore_space_at_start_and_end = True,\
 			sqlContext = sqlContext)
-		entities_set = set(entities)
-		entiteis_not = [e for e in entities_set if '_not_' in e]
-		find_candidate_entities_by_set = \
-			lambda input: list(entities_set.intersection(\
-			set(text_entity2text_entity_subset(input))))+\
-			entiteis_not
-		output_entity = input_df.withColumn('candidate_entities',\
-			udf(find_candidate_entities_by_set, \
-			ArrayType(StringType()))\
-			('text_entity'))
-		output_entity.cache()
-		'''
-		'''
-		match the entities by a fucntion
-		'''
-		entities = load_entities(entity_file,\
-			return_format = 'list',\
-			ignore_space_at_start_and_end = False,\
-			sqlContext = sqlContext)
-		entity_extract_fun = lambda input: \
-			marge_entity2preprocessed_text(\
-			input,\
-			entities, \
-			nearby_entity_merge = nearby_entity_merge)
-		output_entity = text_df2text_entity_df_by_func(\
-			input_df,\
-			entity_extract_fun,\
-			entity_type = entity_type,
-			extract_entity_from_original_text = False,\
-			nearby_entity_merge = nearby_entity_merge,\
-			entity_type_repalce_by_wildcard = \
-			entity_type_repalce_by_wildcard,\
-			sqlContext = sqlContext)
+		try:
+			entities_set = set(entities)
+			entiteis_not = [e for e in entities_set if '_not_' in e]
+			find_candidate_entities_by_set = \
+				lambda input: list(entities_set.intersection(\
+				set(text_entity2text_entity_subset(input))))+\
+				entiteis_not
+			output_entity = input_df.withColumn('candidate_entities',\
+				udf(find_candidate_entities_by_set, \
+				ArrayType(StringType()))\
+				('text_entity'))
+		except:
+			output_entity = input_df.withColumn('candidate_entities',\
+				udf(lambda input: entities, \
+				ArrayType(StringType()))\
+				('text_entity'))
 		output_entity.cache()
 	'''
 	merge the candidate entiteis to the text_entity
