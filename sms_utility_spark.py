@@ -464,8 +464,8 @@ def text_df2text_entity_df_by_func(input_df,\
 	return output_df
 
 '''
-rm input.json
-vi input.json
+sudo rm input.json
+sudo vi input.json
 i{"text":"this is wang and you?","sender":"1"}
 {"text":" but it is wang, jingyan haha","sender":"2"}
 {"text":" but it is wang, jingyan wang haha","sender":"3"}
@@ -473,12 +473,17 @@ i{"text":"this is wang and you?","sender":"1"}
 {"text":" i will cost 131 cloud haha","sender":"5"}
 {"text":"a test","sender":"5"}
 
-rm entities.csv
-vi entities.csv
+sudo rm entities.csv
+sudo vi entities.csv
 iwang
 "wang, jingyan"
 331 cloud
 mr
+
+hadoop fs -rm -r input.json
+hadoop fs -rm -r entities.csv
+hadoop fs -put input.json ./
+hadoop fs -put entities.json ./
 
 from sms_utility_spark import *
 sqlContext = sqlContext_local
@@ -488,7 +493,8 @@ input_df = sqlContext.read.json('input.json')
 text_df2text_entity_df_by_entity_match(\
 	input_df,\
 	'entities.csv',\
-	entity_type = 'name')\
+	entity_type = 'name',\
+	sqlContext = sqlContext)\
 	.show(100, False)
 
 text_df2text_entity_df_by_entity_match(\
@@ -518,28 +524,6 @@ def text_df2text_entity_df_by_entity_match(\
 			udf(text_preprocess, StringType())\
 			('text'))
 		input_df.cache()	
-	'''
-	match the entities by a fucntion
-	if mathc_entity_by_word is False:
-		entities = load_entities(entity_file,\
-			return_format = 'list',\
-			ignore_space_at_start_and_end = False,\
-			sqlContext = sqlContext)
-		entity_extract_fun = lambda input: \
-			marge_entity2preprocessed_text(\
-			input,\
-			entities, \
-			nearby_entity_merge = nearby_entity_merge)
-		output_entity = text_df2text_entity_df_by_func(\
-			input_df,\
-			entity_extract_fun,\
-			entity_type = entity_type,
-			extract_entity_from_original_text = False,\
-			nearby_entity_merge = nearby_entity_merge,\
-			entity_type_repalce_by_wildcard = \
-			entity_type_repalce_by_wildcard,\
-			sqlContext = sqlContext)
-	'''
 	if mathc_entity_by_word is True:
 		df_entity = load_entities(entity_file,\
 			return_format = 'df',\
@@ -624,13 +608,16 @@ def text_df2text_entity_df_by_entity_match(\
 		output_entity.cache()
 	else:
 		'''
+		#####
 		there is another way to generate entity by matching 
 		text to entity by hashing and set intersation
 		the input must have text_entity and candidate_entities
-		'''
+		but this method needs regex
+		#####
+		print('matching enities by set intersection')
 		entities = load_entities(entity_file,\
 			return_format = 'list',\
-			ignore_space_at_start_and_end = False,\
+			ignore_space_at_start_and_end = True,\
 			sqlContext = sqlContext)
 		entities_set = set(entities)
 		entiteis_not = [e for e in entities_set if '_not_' in e]
@@ -642,6 +629,29 @@ def text_df2text_entity_df_by_entity_match(\
 			udf(find_candidate_entities_by_set, \
 			ArrayType(StringType()))\
 			('text_entity'))
+		output_entity.cache()
+		'''
+		'''
+		match the entities by a fucntion
+		'''
+		entities = load_entities(entity_file,\
+			return_format = 'list',\
+			ignore_space_at_start_and_end = False,\
+			sqlContext = sqlContext)
+		entity_extract_fun = lambda input: \
+			marge_entity2preprocessed_text(\
+			input,\
+			entities, \
+			nearby_entity_merge = nearby_entity_merge)
+		output_entity = text_df2text_entity_df_by_func(\
+			input_df,\
+			entity_extract_fun,\
+			entity_type = entity_type,
+			extract_entity_from_original_text = False,\
+			nearby_entity_merge = nearby_entity_merge,\
+			entity_type_repalce_by_wildcard = \
+			entity_type_repalce_by_wildcard,\
+			sqlContext = sqlContext)
 		output_entity.cache()
 	'''
 	merge the candidate entiteis to the text_entity
