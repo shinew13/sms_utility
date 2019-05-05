@@ -414,7 +414,7 @@ def dl_model_entity_train_from_json(\
 	num_0, num_1 = np.sum(y_train, 0)
 	weight_1 = (num_0/num_1)*positive_weight_factor
 	print('negative training text number:\t', num_0)
-	print('positive training text number:\t', num_1
+	print('positive training text number:\t', num_1)
 	print('weight of positive class:\t', weight_1)
 	#train the model
 	print('train the model')
