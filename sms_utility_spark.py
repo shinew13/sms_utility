@@ -641,6 +641,7 @@ def text_df2text_entity_df_by_entity_match(\
 			return_format = 'list',\
 			ignore_space_at_start_and_end = True,\
 			sqlContext = sqlContext)
+		'''
 		try:
 			entities_set = set(entities)
 			entiteis_not = [e for e in entities_set if '_not_' in e]
@@ -653,10 +654,11 @@ def text_df2text_entity_df_by_entity_match(\
 				ArrayType(StringType()))\
 				('text_entity'))
 		except:
-			output_entity = input_df.withColumn('candidate_entities',\
-				udf(lambda input: entities, \
-				ArrayType(StringType()))\
-				('text_entity'))
+		'''
+		output_entity = input_df.withColumn('candidate_entities',\
+			udf(lambda input: entities, \
+			ArrayType(StringType()))\
+			('text_entity'))
 		output_entity.cache()
 	'''
 	merge the candidate entiteis to the text_entity
