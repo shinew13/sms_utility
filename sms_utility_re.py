@@ -4,10 +4,14 @@ https://github.com/vi3k6i5/flashtext
 https://medium.com/@Alibaba_Cloud/why-you-should-use-flashtext-instead-of-regex-for-data-analysis-960a0dc96c6a
 '''
 import re
-import regex
 from hashlib import md5
 from collections import *
 import numpy
+
+try:
+	import regex
+except:
+	pass
 
 #https://en.wikipedia.org/wiki/List_of_Unicode_characters
 #https://en.wikipedia.org/wiki/Arabic_script_in_Unicode
@@ -1342,6 +1346,12 @@ def text_entites2text_entity_context_wild_list(\
 
 '''
 matching a text_entity to indicator function and indicator list
+
+input = u" get the documents by [monday 7 am] _end_"
+text_entity_categorization(input,
+	output_entity_name = 'document_transfer_time',
+	indicator_func = document_transfer_time_context_match,\
+	indicator_list = document_transfer_time_context_indicator)
 '''
 def text_entity_categorization(input,
 	output_entity_name = 'entity',
