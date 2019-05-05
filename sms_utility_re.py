@@ -6,7 +6,11 @@ https://medium.com/@Alibaba_Cloud/why-you-should-use-flashtext-instead-of-regex-
 import re
 from hashlib import md5
 from collections import *
-import numpy
+
+try:
+	import numpy
+except Exception as e:
+	print(str(e))
 
 try:
 	import regex
