@@ -12,8 +12,114 @@ from keras.preprocessing.text import *
 from keras.preprocessing.sequence import *
 import h5py
 import time
+import numpy as np
 
 from sms_utility_re import *
+
+'''
+sequence_labelding model
+'''
+
+def build_sequence_tagging_model(
+	positive_class_num = 1,
+	gpus = None):
+	model = Sequential()
+	model.add(Embedding(input_dim = num_word_max, 
+		output_dim = 300, 
+		input_length = num_max_text_len))
+	model.add(Dropout(0.1))
+	model.add(Bidirectional(
+		LSTM(300, 
+			dropout=0.1, 
+			recurrent_dropout=0.1,
+			return_sequences=True)))
+	model.add(Bidirectional(
+		LSTM(300, 
+			dropout=0.1, 
+			recurrent_dropout=0.1,
+			return_sequences=True)))
+	model.add(Conv1D(500,
+		kernel_size = num_max_context_len,
+		activation='relu',
+		padding = 'same',
+		strides=1))
+	model.add(Conv1D(500,
+		kernel_size = num_max_context_len,
+		activation='relu',
+		padding = 'same',
+		strides=1))
+	model.add(MaxPooling1D(
+		strides=1, padding='same'))
+	model.add(Conv1D(500,
+		kernel_size = num_max_context_len,
+		activation='relu',
+		padding = 'same',
+		strides=1))
+	model.add(MaxPooling1D(
+		strides=1, padding='same'))
+	model.add(TimeDistributed(Dense(300, activation='relu')))
+	model.add(TimeDistributed(Dense(positive_class_num+1, 
+		activation='softmax')))
+	if gpus is not None:
+		model = multi_gpu_model(model, gpus = gpus)
+	return model
+
+
+'''
+usage:
+
+num_max_text_len = 5
+x_train = np.array([
+	[1,8,1,1,1],
+	[1,1,1,10,8],
+	[1,1,1,10,8]
+	])
+y_train = np.array([
+	[0,1,0,0,0],
+	[0,0,0,1,1],
+	[0,0,0,0,0]
+	])
+
+model = train_sequence_tagging_model(
+	x_train, y_train, \
+	positive_class_num = None,\
+	positive_weight = 1, \
+	model_file = 'temp_model.h5py', \
+	batch_size=500, 
+	epochs = 20,
+	gpus = None)
+
+print(model.predict(x_train))
+'''
+def train_sequence_tagging_model(
+	x_train, y_train, \
+	positive_class_num = None,\
+	positive_weight = 1, \
+	model_file = 'temp_model.h5py', \
+	batch_size = 500, 
+	epochs = 3,
+	gpus = None):
+	y_train1 = to_categorical(y_train)
+	if positive_class_num is None:
+		positive_class_num = y_train1.shape[-1]-1
+	model = build_sequence_tagging_model(
+		positive_class_num = positive_class_num,
+		gpus = gpus)
+	sample_weights = np.array(y_train != 0).astype(int)\
+		*positive_weight \
+		+ np.array(y_train == 0).astype(int)
+	model.compile(
+		optimizer='rmsprop', 
+		loss='categorical_crossentropy',
+		metrics=['accuracy'],
+		sample_weight_mode='temporal')
+	model.fit(x_train, y_train1,
+		sample_weight = sample_weights,
+		batch_size=batch_size, 
+		epochs=epochs)
+	model.save_weights(model_file)
+	return model
+
 
 '''
 multi-class models
@@ -185,4 +291,69 @@ def load_entity_model(model_file,\
 		optimizer='adam', metrics=['accuracy'])
 	model._make_predict_function()
 	return model
+
+'''
+document_transfer_from_receiver_model = \
+	load_multiclass_model(\
+	'document_transfer_from_receiver.h5py',\
+	positive_class_num = 1)
+input = u" _start_ please send me the document _end_ "
+text_categorization_dl(input, 
+	document_transfer_from_receiver_model)
+'''
+def text_categorization_dl(input, 
+	model):
+	try:
+		words = process_text2words(input, \
+			ignoare_entity = False)
+		word_idx = word_list2word_idx(words)
+		x = pad_sequences([word_idx], \
+			maxlen = num_max_text_len)
+		y_score = model.predict(x)
+		prediction = np.argmax(y_score, axis=1)[0]
+		score = np.max(y_score, axis=1)[0]
+		return prediction, score
+	except:
+		return None
+
+'''
+
+document_transfer_document_model = \
+	load_entity_model(\
+	'document_transfer_document.h5py')
+
+input = u" _start_ i will send [document] to you _end_ "
+text_entity_categorization_dl(input,\
+	document_transfer_document_model,\
+	output_entity_name = 'document_transfer_document')
+'''
+def text_entity_categorization_dl(input,
+	model,\
+	output_entity_name = 'entity'):
+	try:
+		output = {}
+		entity = text_entity2entity(input)
+		text_entity_single_idx = \
+			preprocessed_text_entity2context_idx(\
+			input)
+		x_left = pad_sequences(\
+			[text_entity_single_idx['left_word_idx']], \
+			maxlen = num_max_context_len,\
+			truncating = 'pre',\
+			padding='pre')
+		x_right = pad_sequences(\
+			[text_entity_single_idx['right_word_idx']], \
+			maxlen = num_max_context_len,\
+			truncating = 'post',\
+			padding='post')
+		x = [x_left, x_right]
+		y_score = model.predict(x)
+		prediction = np.argmax(y_score, axis=1)[0]
+		score = np.max(y_score, axis=1)[0]
+		if prediction > 0:
+			return {output_entity_name:entity, \
+				output_entity_name+'_score': score}
+		return None
+	except:
+		return None
 ################sms_utility_dl_model.py###############
