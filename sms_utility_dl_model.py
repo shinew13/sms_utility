@@ -323,6 +323,7 @@ document_transfer_document_model = \
 	'document_transfer_document.h5py')
 
 input = u" _start_ i will send [document] to you _end_ "
+input = u" _start_ this is a [document] hahaha _end_ "
 text_entity_categorization_dl(input,\
 	document_transfer_document_model,\
 	output_entity_name = 'document_transfer_document')
@@ -331,8 +332,6 @@ def text_entity_categorization_dl(input,
 	model,\
 	output_entity_name = 'entity'):
 	try:
-		output = {}
-		entity = text_entity2entity(input)
 		text_entity_single_idx = \
 			preprocessed_text_entity2context_idx(\
 			input)
@@ -350,10 +349,7 @@ def text_entity_categorization_dl(input,
 		y_score = model.predict(x)
 		prediction = np.argmax(y_score, axis=1)[0]
 		score = np.max(y_score, axis=1)[0]
-		if prediction > 0:
-			return {output_entity_name:entity, \
-				output_entity_name+'_score': score}
-		return None
+		return prediction, score
 	except:
 		return None
 ################sms_utility_dl_model.py###############
