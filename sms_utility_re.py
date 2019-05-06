@@ -1387,34 +1387,27 @@ matching a text_entity to indicator function and indicator list
 
 input = u" get the documents by [monday 7 am] _end_"
 text_entity_categorization(input,
-	output_entity_name = 'document_transfer_time',
 	indicator_func = document_transfer_time_context_match,\
 	indicator_list = document_transfer_time_context_indicator)
 '''
 def text_entity_categorization(input,
-	output_entity_name = 'entity',
 	indicator_func = None,\
 	indicator_list = None):
 	try:
-		output = {}
-		entity = text_entity2entity(input)
-		#print(preprocessed_text_entity2context_idx(text_entity1))
 		text_entity1 = text_entity2text_entity_wildcard(\
 			input)
 		if indicator_func is not None:
 			indicator1 = text_entity2entity(\
 				indicator_func(text_entity1))
 			if indicator1 is not None:
-				return {output_entity_name:entity, \
-					output_entity_name+'_indicator': indicator1}
+				return indicator1
 		if indicator_list is not None:
 			indicator2 = text_entity2entity(\
 				marge_entity2preprocessed_text(\
 				text_entity1, indicator_list, \
 				nearby_entity_merge = True))
 			if indicator2 is not None:
-				return {output_entity_name:entity, \
-					output_entity_name+'_indicator': indicator2}
+				return indicator2
 		return None
 	except:
 		return None
