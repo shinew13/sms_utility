@@ -42,8 +42,7 @@ def text_entity_list_categorization_rest_api(\
 	input,
 	indicator_func = None, 
 	indicator_list = None,
-	model = None,
-	entity_name = 'entity'):
+	model = None):
 	output = []
 	for text_entity in input:
 		indicator = text_entity_categorization(text_entity,
@@ -55,13 +54,14 @@ def text_entity_list_categorization_rest_api(\
 		if model is not None:
 			if indicator is not None or prediction > 0:
 				output.append({\
-					entity_name: text_entity2entity(text_entity),\
-					entity_name+'_indicator': indicator,\
-					entity_name+'_score':score})
+					'entity': text_entity2entity(text_entity),\
+					'indicator': indicator,\
+					'score':score})
 		else:
 			if indicator is not None:
 				output.append({\
-					entity_name: text_entity2entity(text_entity),\
-					entity_name+'_indicator': indicator})
+					'entity': text_entity2entity(text_entity),\
+					'indicator': indicator})
 	return output
+
 ##############sms_utility_rest_api.py##############
