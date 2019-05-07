@@ -29,6 +29,8 @@ regex_email = re.compile(("([A-z0-9!#$%&*+\/=?^_`{|}~-]+(?:\.[A-z0-9!#$%&'*+\/=?
 	"{|}~-]+)*(@)(?:[A-z0-9](?:[A-z0-9-]*[A-z0-9])?(\.|"
 	"\sdot\s))+[A-z0-9](?:[A-z0-9-]*[A-z0-9])?)"))
 
+re_url = r'(http|ftp|https):\/\/[\w-]+(\.[\w-]+)+([\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?'
+
 #https://blog.csdn.net/chivalrousli/article/details/77412329
 re_chinese_letter = u'[\u4E00-\u9FA5\u9FA6-\u9FEF]'
 re_chinese_puntutation = u'[\u3000-\u303F\uFF00-\uFFEF]'
@@ -85,12 +87,15 @@ text_preprocess(u"this xg_gex@324.com is 888:888 a _number_ and _,_ is a _email_
 	ignore_email = False)
 
 text_preprocess(u" this is gxgn@gma.com this $123")
+
+text_preprocess(u"es from us, to you. Clickhttp://birthday.etisalatrewards.ae/?promo=AIEIC9BG to choose your g")
 '''
 def text_preprocess(input,\
 	ignore_puntuation = False,\
 	ignore_number = False,\
 	ignore_linebreak = True,\
 	ignore_email = False,\
+	ignore_url = False,\
 	ignore_start_end_space_indicator = False,\
 	scape_entity = False,\
 	seperate_arabic_ending = False):
@@ -98,6 +103,8 @@ def text_preprocess(input,\
 		input = input.strip()
 		if ignore_email is False:
 			input = re.sub(regex_email, ' _email_ ', input)
+		if ignore_url is False:
+			input = re.sub(re_url, ' _url_ ', input)
 		if ignore_number is False:
 			input = re.sub(re_arabic_number, ' _number_ ', input)
 		if ignore_linebreak is False:
@@ -1031,6 +1038,13 @@ def extract_email(input):
 def text2text_email(input):
 	return extract_entity_by_re(input, \
 		regex_email)
+
+'''
+text2text_url(u"ishes from us, to you. Click http://birthday.etisalatrewards.ae/?promo=AIEIC9BG to choose ")
+'''
+def text2text_url(input):
+	return extract_entity_by_re(input, \
+		re_url)
 
 '''
 def text2text_email(input):
