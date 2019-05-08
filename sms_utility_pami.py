@@ -1,3 +1,4 @@
+#############sms_utility_pami.py#################
 from sms_utility_re import *
 from sms_utility_dl_model import *
 
@@ -28,3 +29,5 @@ def text_entity_list_categorization_rest_api(\
 					'entity': text_entity2entity(text_entity),\
 					'indicator': indicator})
 	return output
+
+#############sms_utility_pami.py#################
