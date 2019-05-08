@@ -320,25 +320,38 @@ conll2entities(input)
 
 input = u"this O\nis O\na O"
 conll2entities(input)
+
+input = u'My O\nname O\nis O\nJgxgv PERSON\n, O\nand O\nI O\nwork O\nfor O\nGugxxg ORGANIZATION\nUxxgg ORGANIZATION\nLLC ORGANIZATION\n. O\nI O\nlive O\nin O\nGixg LOCATION\nGxggw LOCATION\n. O'
+conll2entities(input,\
+	software = 'stanfordnlp')
 '''
-def conll2entities(input):
+def conll2entities(input,\
+	software = None):
 	try:
 		output = []
 		input = '\n'+input.strip()+'\n'
-		for e in re.finditer(r'\n[^ \n]+ U\-[A-Z]+\n', input):
-			e1 = e.group()
-			entity = re.sub('^\n| U\-[A-Z]+\n$', '', e1)
-			entity_type = re.sub('^\n[^ \n]+ U\-|\n$', '', e1)
-			output.append({'entity':entity, 'entity_type':entity_type})
-		for e in re.finditer(r'\n([^ \n]+ B\-[A-Z]+\n)([^ \n]+ I\-[A-Z]+\n)?([^ \n]+ L\-[A-Z]+\n)?', input):
-			e1 = e.group()
-			entity = re.sub(' B\-[A-Z]+\n', ' ', e1)
-			entity = re.sub(' I\-[A-Z]+\n', ' ', entity)	
-			entity = re.sub(' L\-[A-Z]+\n', ' ', entity)	
-			entity = entity.strip()
-			entity_type = re.search(r'\n[^ \n]+ B\-[A-Z]+\n', e1).group()
-			entity_type = re.sub('\n[^ \n]+ B\-|\n', '', entity_type)
-			output.append({'entity':entity, 'entity_type':entity_type})
+		if software is None:
+			for e in re.finditer(r'\n[^ \n]+ U\-[A-Z]+\n', input):
+				e1 = e.group()
+				entity = re.sub('^\n| U\-[A-Z]+\n$', '', e1)
+				entity_type = re.sub('^\n[^ \n]+ U\-|\n$', '', e1)
+				output.append({'entity':entity, 'entity_type':entity_type})
+			for e in re.finditer(r'\n([^ \n]+ B\-[A-Z]+\n)([^ \n]+ I\-[A-Z]+\n)?([^ \n]+ L\-[A-Z]+\n)?', input):
+				e1 = e.group()
+				entity = re.sub(' B\-[A-Z]+\n', ' ', e1)
+				entity = re.sub(' I\-[A-Z]+\n', ' ', entity)	
+				entity = re.sub(' L\-[A-Z]+\n', ' ', entity)	
+				entity = entity.strip()
+				entity_type = re.search(r'\n[^ \n]+ B\-[A-Z]+\n', e1).group()
+				entity_type = re.sub('\n[^ \n]+ B\-|\n', '', entity_type)
+				output.append({'entity':entity, 'entity_type':entity_type})
+		if software in ['stanfordnlp']:
+			for e in re.finditer(r'\n([^ \n]+ [A-Z]{2,}\n)+', input):
+				e1 = e.group()
+				entity = re.sub(' [A-Z]+\n', ' ', e1).strip()
+				entity_type = re.search(r'\n[^ \n]+ [A-Z]+\n', e1).group()
+				entity_type = re.sub('^\n[^ \n]+ |\n$', '', entity_type)
+				output.append({'entity':entity, 'entity_type':entity_type})
 		return output 
 	except Exception as e:
 		print(str(e))
