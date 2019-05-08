@@ -330,10 +330,11 @@ def conll2entities(input):
 			entity = re.sub('^\n| U\-[A-Z]+\n$', '', e1)
 			entity_type = re.sub('^\n[^ \n]+ U\-|\n$', '', e1)
 			output.append({'entity':entity, 'entity_type':entity_type})
-		for e in re.finditer(r'\n[^ \n]+ B\-[A-Z]+\n([^ \n]+ I\-[A-Z]+)\n', input):
+		for e in re.finditer(r'\n([^ \n]+ B\-[A-Z]+\n)([^ \n]+ I\-[A-Z]+\n)?([^ \n]+ L\-[A-Z]+\n)?', input):
 			e1 = e.group()
 			entity = re.sub(' B\-[A-Z]+\n', ' ', e1)
 			entity = re.sub(' I\-[A-Z]+\n', ' ', entity)	
+			entity = re.sub(' L\-[A-Z]+\n', ' ', entity)	
 			entity = entity.strip()
 			entity_type = re.search(r'\n[^ \n]+ B\-[A-Z]+\n', e1).group()
 			entity_type = re.sub('\n[^ \n]+ B\-|\n', '', entity_type)
