@@ -9,6 +9,7 @@ text_entities_struct = {\
 	'text': fields.String,\
 	'number': fields.List(fields.String),\
 	'email': fields.List(fields.String),\
+	'url': fields.List(fields.String),\
 	'name': fields.List(fields.String),\
 	'location': fields.List(fields.String),\
 	'orgnization': fields.List(fields.String),\
