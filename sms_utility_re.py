@@ -1005,8 +1005,15 @@ extract_time_number('10-10 -100 12.12.13/45/78/44 12, 12:0')
 extract_number('xgn [gsg] igmd')
 
 extract_number(' $843 ')
+
+from sms_utility_re import *
+
+input = u" eme25@gmail.com http://478537.com $74.82"
+extract_number(input)
 '''
 def extract_number(input):
+	input = re.sub(regex_email, ' _email_ ', input)
+	input = re.sub(re_url, ' _url_ ', input)
 	return extract_entity_by_re(input, \
 		re_arabic_number)
 
