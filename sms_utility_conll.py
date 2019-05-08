@@ -132,7 +132,6 @@ def merge_indicator_from_conll2indicator_csv(\
 	os.system('rm '+output_indicator_cvs)
 	open(output_indicator_cvs, 'w+').write(content)
 
-
 '''
 three cases
 
@@ -142,7 +141,6 @@ three cases
 
 3. only right context
 '''
-
 def conll2context_indicator_conll(input, \
 	context_indicator_type, \
 	target_entity):
@@ -310,4 +308,38 @@ def conll_file2entity_context_indicator_csv(\
 		open(indicator_cvs, 'w+').write(output.encode('utf-8'))
 	else:
 		print('no indicator detected')
+
+
+'''
+extracing entities from conll 
+
+usage:
+
+input = u"\nMy O\nname O\nis O\nDegxxgve U-PER\nand O\nI O\nlive O\nin O\nIgxxgevek U-MISC\n. O\nI O\nwork O\nfor O\nGexxgex B-ORG\nIggxg I-ORG\nLLC L-ORG\n. O\n"
+conll2entities(input)
+
+input = u"this O\nis O\na O"
+conll2entities(input)
+'''
+def conll2entities(input):
+	try:
+		output = []
+		input = '\n'+input.strip()+'\n'
+		for e in re.finditer(r'\n[^ \n]+ U\-[A-Z]+\n', input):
+			e1 = e.group()
+			entity = re.sub('^\n| U\-[A-Z]+\n$', '', e1)
+			entity_type = re.sub('^\n[^ \n]+ U\-|\n$', '', e1)
+			output.append({'entity':entity, 'entity_type':entity_type})
+		for e in re.finditer(r'\n[^ \n]+ B\-[A-Z]+\n([^ \n]+ I\-[A-Z]+)\n', input):
+			e1 = e.group()
+			entity = re.sub(' B\-[A-Z]+\n', ' ', e1)
+			entity = re.sub(' I\-[A-Z]+\n', ' ', entity)	
+			entity = entity.strip()
+			entity_type = re.search(r'\n[^ \n]+ B\-[A-Z]+\n', e1).group()
+			entity_type = re.sub('\n[^ \n]+ B\-|\n', '', entity_type)
+			output.append({'entity':entity, 'entity_type':entity_type})
+		return output 
+	except Exception as e:
+		print(str(e))
+		return None
 #########sms_utility_conll.py#########
