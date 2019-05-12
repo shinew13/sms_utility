@@ -2,6 +2,11 @@
 import os
 import re
 
+try:
+	import regex
+except Exception as e:
+	print(str(e))
+
 '''
 from sms_utility_conll import *
 
@@ -321,7 +326,13 @@ conll2entities(input)
 input = u"this O\nis O\na O"
 conll2entities(input)
 
-input = u'My O\nname O\nis O\nJgxgv PERSON\n, O\nand O\nI O\nwork O\nfor O\nGugxxg ORGANIZATION\nUxxgg ORGANIZATION\nLLC ORGANIZATION\n. O\nI O\nlive O\nin O\nGixg LOCATION\nGxggw LOCATION\n. O'
+input = u"this O\nis O\na O\nxxx B-PER\nyyy B-ORG\nzzz B-LOC"
+conll2entities(input)
+
+input = u"this O\nis O\na O\nxxx B-PER\nyyy B-ORG\nzzz B-LOC\nsss I-LOC\nttt I-LOC"
+conll2entities(input)
+
+input = u'My O\nname O\nis O\nJgxgv PERSON\nxxxx ORGANIZATION\n, O\nand O\nI O\nwork O\nfor O\nGugxxg ORGANIZATION\nUxxgg ORGANIZATION\nLLC ORGANIZATION\n. O\nI O\nlive O\nin O\nGixg LOCATION\nGxggw LOCATION\n. O'
 conll2entities(input,\
 	software = 'stanfordnlp')
 '''
@@ -331,12 +342,14 @@ def conll2entities(input,\
 		output = []
 		input = '\n'+input.strip()+'\n'
 		if software is None:
-			for e in re.finditer(r'\n[^ \n]+ U\-[A-Z]+\n', input):
+			for e in regex.finditer(r'\n[^ \n]+ U\-[A-Z]+\n', \
+				input, overlapped=True):
 				e1 = e.group()
 				entity = re.sub('^\n| U\-[A-Z]+\n$', '', e1)
 				entity_type = re.sub('^\n[^ \n]+ U\-|\n$', '', e1)
 				output.append({'entity':entity, 'entity_type':entity_type})
-			for e in re.finditer(r'\n([^ \n]+ B\-[A-Z]+\n)([^ \n]+ I\-[A-Z]+\n)?([^ \n]+ L\-[A-Z]+\n)?', input):
+			for e in regex.finditer(r'\n([^ \n]+ B\-[A-Z]+\n)([^ \n]+ I\-[A-Z]+\n)*([^ \n]+ L\-[A-Z]+\n)*',\
+				input, overlapped=True):
 				e1 = e.group()
 				entity = re.sub(' B\-[A-Z]+\n', ' ', e1)
 				entity = re.sub(' I\-[A-Z]+\n', ' ', entity)	
@@ -346,12 +359,24 @@ def conll2entities(input,\
 				entity_type = re.sub('\n[^ \n]+ B\-|\n', '', entity_type)
 				output.append({'entity':entity, 'entity_type':entity_type})
 		if software in ['stanfordnlp']:
-			for e in re.finditer(r'\n([^ \n]+ [A-Z]{2,}\n)+', input):
-				e1 = e.group()
-				entity = re.sub(' [A-Z]+\n', ' ', e1).strip()
-				entity_type = re.search(r'\n[^ \n]+ [A-Z]+\n', e1).group()
-				entity_type = re.sub('^\n[^ \n]+ |\n$', '', entity_type)
-				output.append({'entity':entity, 'entity_type':entity_type})
+			'''
+			find all entity types
+			'''
+			entity_type = [e.group().strip() \
+				for e in regex.finditer(r' [A-Z]{2,}\n', \
+				input)]
+			entity_type = list(set(entity_type))
+			'''
+			match each entity type's entities
+			'''
+			for entity_type1 in entity_type:
+				for e in regex.finditer(\
+					r'(\n[^ \n]+ '+entity_type1+r')+', \
+					input):
+					e1 = e.group()
+					entity = re.sub(r'(\n| '+entity_type1+r')+', ' ', e1).strip()
+					output.append({'entity':entity, \
+					'entity_type':entity_type1})
 		return output 
 	except Exception as e:
 		print(str(e))
