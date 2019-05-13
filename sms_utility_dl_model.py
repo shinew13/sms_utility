@@ -330,7 +330,7 @@ text_entity_categorization_dl(input,\
 '''
 def text_entity_categorization_dl(input,
 	model,\
-	output_entity_name = 'entity'):
+	num_max_context_len = num_max_context_len):
 	try:
 		text_entity_single_idx = \
 			preprocessed_text_entity2context_idx(\
