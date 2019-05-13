@@ -880,15 +880,21 @@ text_json2text_entity_json(\
 
 usage:
 
-rm input.json
-vi input.json
+sudo rm input.json
+sudo vi input.json
 i{"text":"my wife will come"}
 {"text":"my son will come"}
 {"sender":"123"}
 
-rm indicator.csv
-vi indicator.csv
+sudo rm indicator.csv
+sudo vi indicator.csv
 imy wife
+
+hadoop fs -rm -r input.json
+hadoop fs -put input.json ./
+
+hadoop fs -rm -r indicator.csv
+hadoop fs -put indicator.csv ./
 
 from sms_utility_spark import *
 
@@ -897,7 +903,9 @@ text_json2text_entity_json(\
 	output_json = 'output.json',\
 	entity_file = 'indicator.csv',\
 	entity_type = 'male_indicator',\
-	entity_surrounded_by_brackets = False)
+	entity_surrounded_by_brackets = False,\
+	drop_non_enity_records = False,\
+	sqlContext = sqlContext)
 '''
 def text_json2text_entity_json(input_json = None,
 	input_df = None,\
@@ -909,6 +917,7 @@ def text_json2text_entity_json(input_json = None,
 	nearby_entity_merge = False,\
 	entity_type_repalce_by_wildcard = False,\
 	entity_surrounded_by_brackets = True,\
+	drop_non_enity_records = False,\
 	ignoare_entity = True,\
 	sqlContext  = None):
 	if sqlContext is None:
@@ -967,6 +976,12 @@ def text_json2text_entity_json(input_json = None,
 			hadoop fs -rm -r temp
 			rm -r temp
 			""")
+		if drop_non_enity_records is True:
+			output_entity.registerTempTable('output_entity')
+			output_entity = sqlContext.sql(u"""
+				SELECT * FROM output_entity
+				WHERE """+entity_type+U""" IS NOT NULL
+				""")
 		output_entity.write.json('temp')
 		os.system(u"""
 			hadoop fs -get temp ./
