@@ -1,6 +1,7 @@
 ######################sms_utility_spark.py######################
 import re
 import os
+import time
 import random
 from pyspark import *
 from pyspark.sql import *
@@ -1993,16 +1994,17 @@ def prepare_entity_dl_input(input_file,\
 			""").drop('context_word_idx')
 	if output_file is not None:
 		print('saving results to '+output_file)
-		output_file_temp = 'temp'+str(random.randint(0, 10000000000))\
+		output_file_temp1 = 'temp'+str(random.randint(0, 10000000000))\
 			.zfill(10)
-		output_df.write.json(output_file_temp)
-		os.system(u"hadoop fs -get "+output_file_temp+u" ./")
-		os.system(u"cat "+output_file_temp+u"/*> "+output_file)
+		output_df.write.json(output_file_temp1)
+		os.system(u"hadoop fs -get "+output_file_temp1+u" ./")
+		os.system(u"cat "+output_file_temp1+u"/*> "+output_file)
 		os.system('hadoop fs -rm -r '+output_file)
-		os.system('hadoop fs -cp -f '+output_file_temp+' '+output_file)
+		os.system('hadoop fs -cp -f '+output_file_temp1+' '+output_file)
+		os.system(u"hadoop fs -rm -r "+output_file_temp1)
+		os.system(u"rm -r "+output_file_temp1)
 		print('results saved to '+output_file)
-		os.system(u"hadoop fs -rm -r "+output_file_temp)
-	os.system(u"hadoop fs -rm -r "+output_df_temp)
+	os.system(u"rm -r "+output_df_temp)
 	return output_df
 
 ######################sms_utility_spark.py######################	
