@@ -117,10 +117,11 @@ extract sener name context
 usage:
 from sms_utility_re_profile import *
 
+text_entity2text_sender_name_context(\
+	' this is _entity_ _puntuation_ i ')
+
 text_entity2text_sender_name_context(' [jim] here from china ')
 text_entity2text_sender_name_context(' this is [jim] here ')
-text_entity2text_sender_name_context(\
-	' this is _entity_ i ')
 
 text_entity2text_sender_name_context(\
 	' this is _name_ _puntuation_ s _title_ _puntuation_ _entity_ ')
@@ -674,4 +675,48 @@ def sender_hometown_context(input):
 '''
 sender_hometown_context(' this is _title_ _name_ from _entity_ ')
 '''
+
+'''
+matching the context of home location
+
+from sms_utility_re_profile import * 
+
+input = ' my home add is in _puntuation_ _entity_ xxxx '
+sender_home_location_context(input)
+
+input = ' i live on _entity_ '
+sender_home_location_context(input)
+
+input = ' this is _name_ from _entity_ '
+sender_home_location_context(input)
+'''
+sender_home_location_context1 = \
+	r' my (home|apt|villa|house|unit|apartment|condo|residence|flat|family) '\
+	+r'((add|address|location|place) )*'\
+	+r'((is|has been|was) )*'\
+	+r'(('+re_in+'|near|close to|near to) )*'\
+	+r'((_puntuation_)+ )*'\
+	+'_entity_ '
+
+sender_home_location_context2 = \
+	r' (i|my familiy|we) '\
+	+r'((am|m|_puntuation_ m|are|r|have) )*'\
+	+r'(live|living|lived) '\
+	+r'(('+re_in+'|near|close to|near to) )*'\
+	+'_entity_ '
+
+sender_home_location_context_indicators = [\
+	sender_home_location_context1,\
+	sender_home_location_context2,\
+	re_sender_hometown_context1]
+
+def sender_home_location_context(input):
+	for pattern in sender_home_location_context_indicators:
+		output = extract_entity_by_re(input, \
+			pattern,\
+			return_none_if_not_matched = True)
+		if output is not None:
+			return output
+	return input
+
 ##############sms_re_profile_utility.py##############
