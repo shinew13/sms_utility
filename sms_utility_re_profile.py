@@ -689,6 +689,9 @@ sender_home_location_context(input)
 
 input = ' this is _name_ from _entity_ '
 sender_home_location_context(input)
+
+input = ' i am _title_ _name_ living in _entity_ xxxx '
+sender_home_location_context(input)
 '''
 sender_home_location_context1 = \
 	r' my (home|apt|villa|house|unit|apartment|condo|residence|flat|family) '\
@@ -699,10 +702,14 @@ sender_home_location_context1 = \
 	+'_entity_ '
 
 sender_home_location_context2 = \
-	r' (i|my familiy|we) '\
+	r' (i|my familiy|child|we) '\
 	+r'((am|m|_puntuation_ m|are|r|have) )*'\
+	r'(('+re_a_an_the+') )*'\
+	r'((_title_)+ )*'\
+	r'((_name_)+ )*'\
 	+r'(live|living|lived) '\
 	+r'(('+re_in+'|near|close to|near to) )*'\
+	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'
 	+'_entity_ '
 
 sender_home_location_context_indicators = [\
