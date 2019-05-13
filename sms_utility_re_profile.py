@@ -704,9 +704,9 @@ sender_home_location_context1 = \
 sender_home_location_context2 = \
 	r' (i|my familiy|child|we) '\
 	+r'((am|m|_puntuation_ m|are|r|have) )*'\
-	r'(('+re_a_an_the+') )*'\
-	r'((_title_)+ )*'\
-	r'((_name_)+ )*'\
+	+r'(('+re_a_an_the+') )*'\
+	+r'((_title_)+ )*'\
+	+r'((_name_)+ )*'\
 	+r'(live|living|lived) '\
 	+r'(('+re_in+'|near|close to|near to) )*'\
 	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'
