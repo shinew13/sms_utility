@@ -699,22 +699,34 @@ sender_home_location_context1 = \
 	+r'((is|has been|was) )*'\
 	+r'(('+re_in+r'|near|close to|near to) )*'\
 	+r'((_puntuation_)+ )*'\
+	+r'(('+re_a_an_the+r') )*'\
 	+'_entity_ '
 
 sender_home_location_context2 = \
-	r' (i|my familiy|child|we) '\
-	+r'((am|m|_puntuation_ m|are|r|have) )*'\
+	r' (i|my familiy|my child|we) '\
+	+r'((am|m|_puntuation_ m|are|r|have|used to) )*'\
 	+r'(('+re_a_an_the+r') )*'\
 	+r'((_title_)+ )*'\
 	+r'((_name_)+ )*'\
 	+r'(live|living|lived) '\
 	+r'(('+re_in+'|near|close to|near to) )*'\
 	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'\
+	+r'(('+re_a_an_the+r') )*'\
+	+'_entity_ '
+
+sender_home_location_context3 = \
+	r' (i|we) '\
+	+r'((am|m|_puntuation_ m|are|r|have|used to) )*'\
+	+r'((\w+ ) ){1,5}'\
+	+r'(live|living|lived) '\
+	+r'(('+re_in+'|near|close to|near to) )*'\
+	+r'((\w+ ) ){1,5}'\
 	+'_entity_ '
 
 sender_home_location_context_indicators = [\
 	sender_home_location_context1,\
-	sender_home_location_context2]
+	sender_home_location_context2,\
+	sender_home_location_context3]
 
 def sender_home_location_context(input):
 	for pattern in sender_home_location_context_indicators:
