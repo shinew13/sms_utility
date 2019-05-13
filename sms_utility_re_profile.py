@@ -707,8 +707,7 @@ sender_home_location_context2 = \
 
 sender_home_location_context_indicators = [\
 	sender_home_location_context1,\
-	sender_home_location_context2,\
-	re_sender_hometown_context1]
+	sender_home_location_context2]
 
 def sender_home_location_context(input):
 	for pattern in sender_home_location_context_indicators:
