@@ -904,7 +904,7 @@ text_json2text_entity_json(\
 	entity_file = 'indicator.csv',\
 	entity_type = 'male_indicator',\
 	entity_surrounded_by_brackets = False,\
-	drop_non_enity_records = False,\
+	drop_non_enity_records = True,\
 	sqlContext = sqlContext)
 '''
 def text_json2text_entity_json(input_json = None,
@@ -972,22 +972,21 @@ def text_json2text_entity_json(input_json = None,
 			StringType())('text_entity'))
 	if output_json is not None:
 		print('saving the result to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
 		if drop_non_enity_records is True:
 			output_entity.registerTempTable('output_entity')
 			output_entity = sqlContext.sql(u"""
 				SELECT * FROM output_entity
 				WHERE """+entity_type+U""" IS NOT NULL
-				""")
-		output_entity.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
+				""")	
+		output_df_temp = 'temp'+str(random.randint(\
+			0, 10000000000)).zfill(10)
+		output_entity.write.json(output_df_temp)
+		os.system('hadoop fs -get '+output_df_temp+' ./')
+		os.system('cat '+output_df_temp+'/* > '+output_json)
 		os.system('hadoop fs -rm -r '+output_json)
-		os.system('hadoop fs -cp -f temp '+output_json)
+		os.system('hadoop fs -cp -f '+output_df_temp+' '+output_json)
+		os.system('hadoop fs -rm -r '+output_df_temp)
+		os.system('rm -r '+output_df_temp)
 	else:
 		return output_entity
 
