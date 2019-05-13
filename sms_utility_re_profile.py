@@ -723,10 +723,19 @@ sender_home_location_context3 = \
 	+r'((\w+ ) ){1,5}'\
 	+'_entity_ '
 
+sender_home_location_context4 = \
+	+r' (am|m) '\
+	+r'(live|living|lived) '\
+	+r'(('+re_in+'|near|close to|near to) )*'\
+	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'\
+	+r'(('+re_a_an_the+r') )*'\
+	+'_entity_ '
+
 sender_home_location_context_indicators = [\
 	sender_home_location_context1,\
 	sender_home_location_context2,\
-	sender_home_location_context3]
+	sender_home_location_context3,\
+	sender_home_location_context4]
 
 def sender_home_location_context(input):
 	for pattern in sender_home_location_context_indicators:
