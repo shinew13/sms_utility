@@ -724,9 +724,9 @@ sender_home_location_context3 = \
 	+'_entity_ '
 
 sender_home_location_context4 = \
-	+r' (am|m) '\
+	r' (am|m) '\
 	+r'(live|living|lived) '\
-	+r'(('+re_in+'|near|close to|near to) )*'\
+	+r'(('+re_in+r'|near|close to|near to) )*'\
 	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'\
 	+r'(('+re_a_an_the+r') )*'\
 	+r'_entity_ '
