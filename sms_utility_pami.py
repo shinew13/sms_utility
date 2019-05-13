@@ -8,7 +8,8 @@ def text_entity_list_categorization_rest_api(\
 	input,
 	indicator_func = None, 
 	indicator_list = None,
-	model = None):
+	model = None,\
+	num_max_context_len = num_max_context_len):
 	output = []
 	for text_entity in input:
 		indicator = text_entity_categorization(text_entity,
@@ -16,7 +17,8 @@ def text_entity_list_categorization_rest_api(\
 			indicator_list = indicator_list)
 		if model is not None:
 			prediction, score = text_entity_categorization_dl(\
-				text_entity, model)
+				text_entity, model,\
+				num_max_context_len = num_max_context_len)
 		if model is not None:
 			if indicator is not None or prediction > 0:
 				output.append({\
