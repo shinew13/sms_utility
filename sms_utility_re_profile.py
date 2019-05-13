@@ -700,7 +700,7 @@ sender_home_location_context1 = \
 	+r'(('+re_in+r'|near|close to|near to) )*'\
 	+r'((_puntuation_)+ )*'\
 	+r'(('+re_a_an_the+r') )*'\
-	+'_entity_ '
+	+r'_entity_ '
 
 sender_home_location_context2 = \
 	r' (i|my familiy|my child|we) '\
@@ -712,7 +712,7 @@ sender_home_location_context2 = \
 	+r'(('+re_in+'|near|close to|near to) )*'\
 	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'\
 	+r'(('+re_a_an_the+r') )*'\
-	+'_entity_ '
+	+r'_entity_ '
 
 sender_home_location_context3 = \
 	r' (i|we) '\
@@ -729,7 +729,7 @@ sender_home_location_context4 = \
 	+r'(('+re_in+'|near|close to|near to) )*'\
 	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'\
 	+r'(('+re_a_an_the+r') )*'\
-	+'_entity_ '
+	+r'_entity_ '
 
 sender_home_location_context_indicators = [\
 	sender_home_location_context1,\
