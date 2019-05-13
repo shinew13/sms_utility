@@ -697,19 +697,19 @@ sender_home_location_context1 = \
 	r' my (home|apt|villa|house|unit|apartment|condo|residence|flat|family) '\
 	+r'((add|address|location|place) )*'\
 	+r'((is|has been|was) )*'\
-	+r'(('+re_in+'|near|close to|near to) )*'\
+	+r'(('+re_in+r'|near|close to|near to) )*'\
 	+r'((_puntuation_)+ )*'\
 	+'_entity_ '
 
 sender_home_location_context2 = \
 	r' (i|my familiy|child|we) '\
 	+r'((am|m|_puntuation_ m|are|r|have) )*'\
-	+r'(('+re_a_an_the+') )*'\
+	+r'(('+re_a_an_the+r') )*'\
 	+r'((_title_)+ )*'\
 	+r'((_name_)+ )*'\
 	+r'(live|living|lived) '\
 	+r'(('+re_in+'|near|close to|near to) )*'\
-	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'
+	+r'(_location_ (_puntuation_|near|close to|near to|'+re_in+r') )*'\
 	+'_entity_ '
 
 sender_home_location_context_indicators = [\
