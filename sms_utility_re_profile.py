@@ -772,13 +772,13 @@ sender_title_context_re_match(input)
 '''
 re_sender_title_context1 = \
 	r' '+re_this_is+r' '\
-	+r'_entity_ _name_ '
+	+r'_entity_ (_name_|of|for) '
 
 re_sender_title_context2 = \
 	r' _entity_ _name_ here '
 
 re_sender_title_context3 = \
-	r' (am|m) _entity_ _name_ '
+	r' (am|m) _entity_ (_name_|of|for) '
 
 re_sender_title_context4 = \
 	r' '+re_regard+r' '\
