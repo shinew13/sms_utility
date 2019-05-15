@@ -10,7 +10,7 @@ re_hate = r'(hate|hating|fuk|fk|curse)'
 re_you = r'(you|u)'
 
 re_good = r'(good|wanderful|great|best|strong|beautiful|gorgeous|sweet)'
-re_bad = r'(terrible|selfish|bad)'
+re_bad = r'(terrible|selfish|bad|disgusting)'
 
 re_so = r'(so+|such|very)'
 
@@ -53,19 +53,41 @@ sender_hate_receiver_re(input)
 
 input = u" you are bad man "
 sender_hate_receiver_re(input)
+
+input = u" i do not want to see you "
+sender_hate_receiver_re(input)
+
+input = u" u r a lier "
+sender_hate_receiver_re(input)
 '''
+re_lier = r'(lier|liar|asshole|dog|slut|bastard|jerk|bitch|son of bitch|motherfucker|mother fucker|fucker|loser|cheater|prostitiute|idiot|bullshit|bull shit)'
+
 re_sender_hate_receiver1 = r' '\
 	+re_hate+r' '\
 	+re_you+r' '
+
 re_sender_hate_receiver2 = r' '\
 	+r_you_are+r' '\
+	+r'('+re_so+r' )*'\
 	+r'('+re_the+r' )*'\
 	+re_bad+r' '
 
+re_sender_hate_receiver3 = \
+	r' (i|we) '\
+	+r'(don _punctuation_ t|dont|do not|) '\
+	+r'want to (see|talk to|c) '\
+	+r'(you|u|your face|ur face) '
+
+re_sender_hate_receiver4 = r' '\
+	+r_you_are+r' '\
+	+r'('+re_the+r' )*'\
+	+re_lier+r' '
+
 re_sender_hate_receiver = [\
 	re_sender_hate_receiver1,\
-	re_sender_hate_receiver2\
-	]
+	re_sender_hate_receiver2,\
+	re_sender_hate_receiver3,\
+	re_sender_hate_receiver4]
 
 def sender_hate_receiver_re(input):
 	for pattern in re_sender_hate_receiver:
