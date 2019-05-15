@@ -336,7 +336,7 @@ dl_model_entity_train_from_json(\
 '''
 def dl_model_entity_train_from_json(\
 	input_file,\
-	num_train = 100000,\
+	num_train = 1000000,\
 	positive_weight_factor = 1,\
 	model_file= 'temp_model.h5py', \
 	prediction_text_file = None,\
@@ -477,8 +477,8 @@ def dl_model_entity_train_from_json(\
 	'''
 	output the negatives predicted as positives
 	'''
-	print('recommend potential positives')
 	if recommend_positive_json_file is not None:
+		print('recommend potential positives to json file')
 		os.system('rm -r temp')
 		sqlContext.sql(u"""
 			SELECT input.text_entity, input.text
@@ -494,8 +494,8 @@ def dl_model_entity_train_from_json(\
 	'''
 	save to conll
 	'''
-	print('recommend potential positives')
 	if recommend_positive_conll_file is not None:
+		print('recommend potential positives to conll file')
 		os.system('rm -r temp')
 		sqlContext.sql(u"""
 			SELECT input.text_entity
