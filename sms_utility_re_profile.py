@@ -746,4 +746,69 @@ def sender_home_location_context(input):
 			return output
 	return input
 
+
+'''
+matching the context of sender's title
+
+usage:
+
+input = u" this is _entity_ _name_ "
+sender_title_context_re_match(input)
+
+input = u" this _entity_ _name_ here "
+sender_title_context_re_match(input)
+
+input = u" am _entity_ _name_ "
+sender_title_context_re_match(input)
+
+input = u" regards _puntuation_ _entity_ _name_ "
+sender_title_context_re_match(input)
+
+input = u" i am _name_ _puntuation_ s _entity_ "
+sender_title_context_re_match(input)
+
+input = u" am _name_ _puntuation_ s _entity_ "
+sender_title_context_re_match(input)
+'''
+re_sender_title_context1 = \
+	r' '+re_this_is+r' '\
+	+r'_entity_ _name_ '
+
+re_sender_title_context2 = \
+	r' _entity_ _name_ here '
+
+re_sender_title_context3 = \
+	r' (am|m) _entity_ _name_ '
+
+re_sender_title_context4 = \
+	r' '+re_regard+r' '\
+	+r'(_puntuation_ )*'\
+	+r'_entity_ _name_ '
+
+re_sender_title_context5 = \
+	r' '+re_this_is+r' '\
+	+r'(a|an|the|one|_name_ _puntuation_ s|your|his|her|their|our) '\
+	+r'_entity_ '
+
+re_sender_title_context6 = \
+	r' (am|m) '\
+	+r'(a|an|the|one|_name_ _puntuation_ s|your|his|her|their|our) '\
+	+r'_entity_ '
+
+re_sender_title_context = [\
+	re_sender_title_context1,\
+	re_sender_title_context2,\
+	re_sender_title_context3,\
+	re_sender_title_context4,\
+	re_sender_title_context5,\
+	re_sender_title_context6]
+
+def sender_title_context_re_match(input):
+	for pattern in re_sender_title_context:
+		output = extract_entity_by_re(input, \
+			pattern,\
+			return_none_if_not_matched = True)
+		if output is not None:
+			return output
+	return input
 ##############sms_re_profile_utility.py##############
