@@ -6,7 +6,7 @@ from sms_utility_re_event import *
 r_you_are = r'(you|u) (are|r)'
 re_the = r'(a|an|the|our|one|this|that|my|your|ur|his|her|their|its)'
 
-re_like = r'(like|love|kiss|kissing|bless|miss|wish|loving|respect|wish)'
+re_like = r'(i like|love|kiss|kissing|bless|miss|wish|loving|respect|wish)'
 re_hate = r'(hate|hating|curse|kill)'
 re_you = r'(you|u)'
 
@@ -21,6 +21,9 @@ input = u" i love you "
 sender_like_receiver_re(input)
 
 input = u" you are the best "
+sender_like_receiver_re(input)
+
+input = u" i like you so much "
 sender_like_receiver_re(input)
 '''
 re_sender_like_receiver1 = r' '\
