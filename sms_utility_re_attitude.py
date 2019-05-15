@@ -64,6 +64,9 @@ sender_hate_receiver_re(input)
 
 input = u"  i will kill u  "
 sender_hate_receiver_re(input)
+
+input = u" i do not like you  "
+sender_hate_receiver_re(input)
 '''
 re_lier = r'(lier|liar|asshole|dog|slut|bastard|jerk|bitch|son of bitch|motherfucker|mother fucker|fucker|loser|cheater|prostitiute|idiot|bullshit|bull shit)'
 re_fuck = r'(fuck|fucking|fuk|fk)'
@@ -81,7 +84,7 @@ re_sender_hate_receiver2 = r' '\
 
 re_sender_hate_receiver3 = \
 	r' (i|we) '\
-	+r'(don _punctuation_ t|dont|do not|) '\
+	+r'(don _punctuation_ t|dont|do not) '\
 	+r'want to (see|talk to|c) '\
 	+r'(you|u|your face|ur face) '
 
@@ -94,12 +97,19 @@ re_sender_hate_receiver5 = r' '\
 	+re_fuck+r' '\
 	+re_you+r' '
 
+re_sender_hate_receiver6 = \
+	r' (i|we) '\
+	+r'(don _punctuation_ t|dont|do not) '\
+	+r'(like|love|loving) '\
+	+r'(you|u) '
+
 re_sender_hate_receiver = [\
 	re_sender_hate_receiver1,\
 	re_sender_hate_receiver2,\
 	re_sender_hate_receiver3,\
 	re_sender_hate_receiver4,\
-	re_sender_hate_receiver5]
+	re_sender_hate_receiver5,\
+	re_sender_hate_receiver6]
 
 def sender_hate_receiver_re(input):
 	for pattern in re_sender_hate_receiver:
