@@ -6,7 +6,7 @@ r_you_are = r'(you|u) (are|r)'
 re_the = r'(a|an|the|our|one|this|that|my|your|ur|his|her|their|its)'
 
 re_like = r'(like|love|kiss|kissing|bless|miss|wish|loving|respect|wish)'
-re_hate = r'(hate|hating|fuk|fk|curse)'
+re_hate = r'(hate|hating|curse|kill)'
 re_you = r'(you|u)'
 
 re_good = r'(good|wanderful|great|best|strong|beautiful|gorgeous|sweet)'
@@ -25,6 +25,7 @@ sender_like_receiver_re(input)
 re_sender_like_receiver1 = r' '\
 	+re_like+r' '\
 	+re_you+r' '
+
 re_sender_like_receiver2 = r' '\
 	+r_you_are+r' '\
 	+r'('+re_the+r' )*'\
@@ -57,12 +58,14 @@ sender_hate_receiver_re(input)
 input = u" i do not want to see you "
 sender_hate_receiver_re(input)
 
-input = u" u r a lier "
+input = u"  i will kill u  "
 sender_hate_receiver_re(input)
 '''
 re_lier = r'(lier|liar|asshole|dog|slut|bastard|jerk|bitch|son of bitch|motherfucker|mother fucker|fucker|loser|cheater|prostitiute|idiot|bullshit|bull shit)'
+re_fuck = r'(fuck|fucking|fuk|fk)'
 
 re_sender_hate_receiver1 = r' '\
+	+re_i_will+r' '\
 	+re_hate+r' '\
 	+re_you+r' '
 
@@ -83,11 +86,16 @@ re_sender_hate_receiver4 = r' '\
 	+r'('+re_the+r' )*'\
 	+re_lier+r' '
 
+re_sender_hate_receiver5 = r' '\
+	+re_fuck+r' '\
+	+re_you+r' '
+
 re_sender_hate_receiver = [\
 	re_sender_hate_receiver1,\
 	re_sender_hate_receiver2,\
 	re_sender_hate_receiver3,\
-	re_sender_hate_receiver4]
+	re_sender_hate_receiver4,\
+	re_sender_hate_receiver5]
 
 def sender_hate_receiver_re(input):
 	for pattern in re_sender_hate_receiver:
