@@ -303,7 +303,7 @@ re_receiver_title_indicator_all = [\
 	re_receiver_is_senders_entity4\
 	]
 
-def text_entity2text_receiver_title_indicator(input):
+def receiver_title_context_re_match(input):
 	for pattern in re_receiver_title_indicator_all:
 		output = extract_entity_by_re(input, \
 			pattern,\
@@ -752,7 +752,7 @@ matching the context of sender's title
 
 usage:
 
-input = u" this is _entity_ _name_ "
+input = u" but i am ur _entity_  "
 sender_title_context_re_match(input)
 
 input = u" this _entity_ _name_ here "
@@ -767,7 +767,7 @@ sender_title_context_re_match(input)
 input = u" i am _name_ _puntuation_ s _entity_ "
 sender_title_context_re_match(input)
 
-input = u" am _name_ _puntuation_ s _entity_ "
+input = u" thank you _puntuation_ _entity_ _name_ _end_  "
 sender_title_context_re_match(input)
 '''
 re_sender_title_context1 = \
@@ -783,17 +783,22 @@ re_sender_title_context3 = \
 re_sender_title_context4 = \
 	r' '+re_regard+r' '\
 	+r'(_puntuation_ )*'\
-	+r'_entity_ _name_ '
+	+r'_entity_ (_name_|_puntuation_ _end_|_end_) '
 
 re_sender_title_context5 = \
 	r' '+re_this_is+r' '\
-	+r'(a|an|the|one|_name_ _puntuation_ s|your|his|her|their|our) '\
+	+r'(a|an|the|one|_name_ _puntuation_ s|your|his|her|their|our|ur) '\
 	+r'_entity_ '
 
 re_sender_title_context6 = \
 	r' (am|m) '\
-	+r'(a|an|the|one|_name_ _puntuation_ s|your|his|her|their|our) '\
+	+r'(a|an|the|one|_name_ _puntuation_ s|your|his|her|their|our|ur) '\
 	+r'_entity_ '
+
+re_sender_title_context7 = \
+	r' ('+re_regard+r'|thank you|thanks|best|take care|good luck|best withes) '\
+	+r'(_puntuation_ )*'\
+	+r'_entity_ (_name_ )*(_puntuation_ )*_end_ '
 
 re_sender_title_context = [\
 	re_sender_title_context1,\
@@ -801,7 +806,8 @@ re_sender_title_context = [\
 	re_sender_title_context3,\
 	re_sender_title_context4,\
 	re_sender_title_context5,\
-	re_sender_title_context6]
+	re_sender_title_context6,\
+	re_sender_title_context7]
 
 def sender_title_context_re_match(input):
 	for pattern in re_sender_title_context:
