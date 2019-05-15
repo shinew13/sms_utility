@@ -1,6 +1,7 @@
 #################sms_utility_re_attitude.py#################
 import re
 from sms_utility_re import *
+from sms_utility_re_event import *
 
 r_you_are = r'(you|u) (are|r)'
 re_the = r'(a|an|the|our|one|this|that|my|your|ur|his|her|their|its)'
