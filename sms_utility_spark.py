@@ -1897,16 +1897,17 @@ def prepare_multiclass_dl_input(input_json_file,\
 	output_df.cache()
 	if output_json_file is not None:		
 		print('saving the results to '+output_json_file)	
-		os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json_file)
+		output_df_temp = 'temp'+str(random.randint(0, 10000000000))\
+		.zfill(10)
+		os.system(u"hadoop fs -rm -r "+output_df_temp)
+		os.system(u"rm -r "+output_df_temp)
+		os.system(u"rm "+output_json_file)
+		output_df.write.json(output_df_temp)
+		os.system(u"hadoop fs -get "+output_df_temp+u" ./")
+		os.system(u"cat "+output_df_temp+u"/* > "+output_json_file)
 		os.system('hadoop fs -rm -r '+output_json_file)
-		os.system('hadoop fs -cp -f temp '+output_json_file)
+		os.system('hadoop fs -cp -f '+output_df_temp+' '+output_json_file)
+		os.system('hadoop fs -rm -r '+output_df_temp)
 	else:
 		return output_df
 
@@ -1998,6 +1999,7 @@ def prepare_entity_dl_input(input_file,\
 			.zfill(10)
 		output_df.write.json(output_file_temp1)
 		os.system(u"hadoop fs -get "+output_file_temp1+u" ./")
+		os.system(u"rm "+output_file)
 		os.system(u"cat "+output_file_temp1+u"/*> "+output_file)
 		os.system('hadoop fs -rm -r '+output_file)
 		os.system('hadoop fs -cp -f '+output_file_temp1+' '+output_file)
