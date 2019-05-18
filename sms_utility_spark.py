@@ -1886,7 +1886,7 @@ def prepare_multiclass_dl_input(input_json_file,\
 		('words'))\
 		.drop('words')
 	if negative_number is not None \
-		and 'label' not in input_df.columns:
+		and 'label' in input_df.columns:
 		output_df.registerTempTable('output_df')
 		output_df = sqlContext.sql(u"""
 			SELECT * FROM output_df
