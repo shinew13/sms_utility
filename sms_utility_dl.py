@@ -39,6 +39,7 @@ def dl_model_multiclass_train_from_json(
 	input_file,\
 	num_train = 100000,\
 	positive_weight_factor = 2,\
+	positive_weight = None,\
 	model_file= 'temp_model.h5py', \
 	recommend_positive_file_json = None,\
 	recommend_positive_file_conll = None,\
@@ -93,7 +94,8 @@ def dl_model_multiclass_train_from_json(
 	y_train = y[idx_train]
 	#calculate the weights of the positive 
 	num_sample_per_class = np.sum(y_train, 0)
-	weight_1 = (num_sample_per_class[0]/np.sum(num_sample_per_class[1:]))\
+	weight_1 = positive_weight if positive_weight is not None else \
+		(num_sample_per_class[0]/np.sum(num_sample_per_class[1:]))\
 		*positive_weight_factor
 	print('weight of non-negative class:\t', weight_1)
 	#train the model
