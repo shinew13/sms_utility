@@ -1909,6 +1909,7 @@ def prepare_multiclass_dl_input(input_json_file,\
 		os.system('hadoop fs -rm -r '+output_json_file)
 		os.system('hadoop fs -cp -f '+output_df_temp+' '+output_json_file)
 		os.system('hadoop fs -rm -r '+output_df_temp)
+		os.system('rm -r '+output_df_temp)
 	else:
 		return output_df
 
