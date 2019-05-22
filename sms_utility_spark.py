@@ -1574,6 +1574,7 @@ def text_json2text_indicators_json(\
 		os.system(u'rm -r '+output_json_file)
 		output_df.write.json(output_json_file)
 		print('saving the results to '+output_json_file)
+		os.system(u'hadoop fs -get '+output_json_file+' ./')
 		os.system(u'mv '+output_json_file+' '+output_file_temp)
 		os.system(u'cat '+output_file_temp+'/* > '+output_file_temp)
 		os.system(u'rm -r '+output_file_temp)
