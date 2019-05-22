@@ -1567,17 +1567,16 @@ def text_json2text_indicators_json(\
 		input_df.text_entity
 		""")
 	if output_json_file is not None:
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
+		output_file_temp = 'temp'\
+			+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		os.system(u'hadoop fs -rm -r '+output_json_file)
+		os.system(u'rm -r '+output_json_file)
+		output_df.write.json(output_json_file)
 		print('saving the results to '+output_json_file)
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json_file)
-		os.system('hadoop fs -rm -r '+output_json_file)
-		os.system('hadoop fs -cp -f temp '+output_json_file)
+		os.system(u'mv '+output_json_file+' '+output_file_temp)
+		os.system(u'cat '+output_file_temp+'/* > '+output_file_temp)
+		os.system(u'rm -r '+output_file_temp)
 	else:
 		return output_df
 
@@ -1909,7 +1908,6 @@ def prepare_multiclass_dl_input(input_json_file,\
 		os.system('hadoop fs -rm -r '+output_json_file)
 		os.system('hadoop fs -cp -f '+output_df_temp+' '+output_json_file)
 		os.system('hadoop fs -rm -r '+output_df_temp)
-		os.system('rm -r '+output_df_temp)
 	else:
 		return output_df
 
