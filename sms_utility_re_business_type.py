@@ -26,11 +26,11 @@ id2business_type(input)
 def id2business_type(input):
 	try:
 		input = input.lower().strip()
-		if bool(re.search('(emiratesnbd|rakbank|adcbalert|nbad|adib|xchange|bank|exch|hsbc|([^a-z]|^)(adcb|dib)([^a-z]|$))', \
+		if bool(re.search('(stanchart|emiratesnbd|rakbank|adcbalert|nbad|adib|xchange|bank|exch|hsbc|([^a-z]|^)(adcb|dib)([^a-z]|$))', \
 			input)) \
 			or bool(re.search(re_finance, input)):
 			return 'finance'
-		if bool(re.search('(clinic|medical|hosp|([^a-z]|^)(nmc|ahs|stanchart)([^a-z]|$))',\
+		if bool(re.search('(clinic|medical|hosp|([^a-z]|^)(nmc|ahs)([^a-z]|$))',\
 			input)) \
 			or bool(re.search(re_clinic, input)):
 			return 'clinic'
