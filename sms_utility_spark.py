@@ -804,20 +804,19 @@ def text_entity_json2text_entity_comb_json(\
 			StringType())('text_entity'))
 	###
 	if output_json is not None:
-		print('saving results to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
-		os.system('hadoop fs -rm -r '+output_json)
-		os.system('hadoop fs -cp -f temp '+output_json)
+		print('saving output to '+output_json)
+		os.system(u"hadoop fs -rm -r "+output_json)
+		output_df.write.json(output_json)	
+		os.system(u"rm -r "+output_json)
+		os.system(u"hadoop fs -get "+output_json+" ./")
+		output_file_temp = 'temp'\
+			+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		os.system(u"mv "+output_json+" "+output_file_temp)
+		os.system(u"cat "+output_file_temp+"/* > "+output_json)
+		os.system(u"rm -r "+output_file_temp)
 		print('results saved to '+output_json)
-	else:
-		return output_df
+	return output_df
 
 '''
 conver a json file of text to texts with entities
@@ -1170,18 +1169,20 @@ def indicator_csv2indicator_context_entity_wildcard_csv(\
 		.select('indicator')
 	outut_df.cache()
 	if output_csv is not None:
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
+		print('saving output to '+output_csv)
+		os.system(u"hadoop fs -rm -r "+output_csv)
 		outut_df.write.format('csv')\
 			.option("header", "false")\
-			.save('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_csv)
-		os.system(u"hadoop fs -rm -r "+output_csv)
-		os.system(u"hadoop fs -cp -f temp "+output_csv)
+			.save(output_csv)		
+		os.system(u"rm -r "+output_csv)
+		os.system(u"hadoop fs -get "+output_csv+" ./")
+		output_file_temp = 'temp'\
+			+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		os.system(u"mv "+output_csv+" "+output_file_temp)
+		os.system(u"cat "+output_file_temp+"/* > "+output_csv)
+		os.system(u"rm -r "+output_file_temp)
+		print('results saved to '+output_csv)
 	return outut_df
 
 '''
