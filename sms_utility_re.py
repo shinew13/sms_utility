@@ -866,6 +866,8 @@ def text_wildcard_entity_recovery(input, \
 		return input
 
 '''
+from sms_utility_re import *
+
 input = ' i work for [_location_ bank] and _location_ finance before this is _name_ from [_location_ islamic bank] how are you '
 sub_entities = [u'rak', u'abu dhabi', u'dubai']
 sub_entity_type = 'location'
@@ -884,10 +886,11 @@ def text_entity_wildcard_subentity_recovery(input, \
 		entities = text_entity2entities(output)
 		input = text_entity2text_entity_wildcard(\
 			input)
-		return text_wildcard_entity_recovery(input, \
+		output = text_wildcard_entity_recovery(input, \
 			entities, \
 			entity_type = 'entity',\
 			with_bracket = True)
+		return output
 	except:
 		return input
 
