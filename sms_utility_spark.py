@@ -699,6 +699,10 @@ sudo vi money_indicator.csv
 i_number_ _currency_
 _currency_ _number_
 
+sudo rm test.py
+sudo vi test.py
+i
+###
 from sms_utility_spark import *
 
 sqlContext = sqlContext_local
@@ -713,8 +717,10 @@ text_entity_json2text_entity_comb_json(\
 	input_json = 'input.json',\
 	output_json = 'output.json',\
 	sqlContext = sqlContext)
-'''
+###
 
+python test.py
+'''
 def text_entity_json2text_entity_comb_json(\
 	comb_entity_indicator_csv,\
 	comb_entity = 'entity',\
@@ -802,7 +808,7 @@ def text_entity_json2text_entity_comb_json(\
 	5. replace the comb entities by wild card
 	'''
 	if comb_entity_type_repalce_by_wildcard is True:
-		print('')
+		print('replacing the combo entity by wildcard')
 		output_df = output_df.withColumn('text_entity',\
 			udf(lambda input: text_entity2text_entity_wildcard(\
 			input, comb_entity), \
