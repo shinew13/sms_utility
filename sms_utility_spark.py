@@ -8,7 +8,6 @@ from pyspark.sql import *
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 
-
 from sms_utility_re import *
 
 try:
@@ -688,16 +687,21 @@ def text_df2text_entity_df_by_entity_match(\
 rm input.json
 vi input.json
 i{"text":"i have 100 aed and you give me usd 100.00 "}
+{"text":"this is aed and 100 aed"}
 
-rm currency.csv
-vi currency.csv
+sudo rm currency.csv
+sudo vi currency.csv
 iaed
 usd
 
-rm money_indicator.csv
-vi money_indicator.csv
+sudo rm money_indicator.csv
+sudo vi money_indicator.csv
 i_number_ _currency_
 _currency_ _number_
+
+from sms_utility_spark import *
+
+sqlContext = sqlContext_local
 
 text_entity_json2text_entity_comb_json(\
 	comb_entity_indicator_csv = 'money_indicator.csv',\
@@ -807,8 +811,8 @@ def text_entity_json2text_entity_comb_json(\
 	if output_json is not None:
 		print('saving output to '+output_json)
 		os.system(u"hadoop fs -rm -r "+output_json)
-		output_df.write.json(output_json)	
 		os.system(u"rm -r "+output_json)
+		output_df.write.json(output_json)	
 		os.system(u"hadoop fs -get "+output_json+" ./")
 		output_file_temp = 'temp'\
 			+str(random.randint(0, 10000000000))\
