@@ -812,6 +812,7 @@ def text_entity_json2text_entity_comb_json(\
 		print('saving output to '+output_json)
 		os.system(u"hadoop fs -rm -r "+output_json)
 		os.system(u"rm -r "+output_json)
+		os.system(u"rm "+output_json)
 		output_df.write.json(output_json)	
 		os.system(u"hadoop fs -get "+output_json+" ./")
 		output_file_temp = 'temp'\
