@@ -334,17 +334,19 @@ def text_json2text_entity_wildcard_re_json(input_json,
 	output_df = output_df.withColumn('text_entity',
 		udf(text_preprocess, StringType())('text_entity'))
 	output_df.cache()
-	print('saving results to '+output_json)
-	os.system(u"""
-		hadoop fs -rm -r temp
-		rm -r temp
-		""")
-	output_df.write.json('temp')
-	os.system(u"""
-		hadoop fs -get temp ./
-		cat temp/* > """+output_json)
-	os.system(u'hadoop fs -rm -r '+output_json)
-	os.system(u'hadoop fs -mv temp '+output_json)
+	print('saving output to '+output_json)
+	os.system(u"hadoop fs -rm -r "+output_json)
+	os.system(u"rm -r "+output_json)
+	os.system(u"rm "+output_json)
+	output_df.write.json(output_json)	
+	os.system(u"hadoop fs -get "+output_json+" ./")
+	output_file_temp = 'temp'\
+		+str(random.randint(0, 10000000000))\
+		.zfill(10)
+	os.system(u"mv "+output_json+" "+output_file_temp)
+	os.system(u"cat "+output_file_temp+"/* > "+output_json)
+	os.system(u"rm -r "+output_file_temp)
+	print('results saved to '+output_json)
 
 '''
 usage: 
