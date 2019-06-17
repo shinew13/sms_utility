@@ -69,16 +69,21 @@ re_sender_employer_context11 = r' '\
 	+re_be_employer+r' '\
 	+r'_name_ '\
 	+r'((\w+) ){0,2}'\
-	+r'(from )*'
+	+r'(from )*'\
 	+'_entity_ '
 
-re_sender_employer_context12 = re_regards_employer+r' _name_ _puntuation_ _entity_'
+re_sender_employer_context12 = r' '\
+	+re_regards_employer+r' '\
+	+r'((\w+) ){1,3}'\
+	+r'_entity_ _end_ '
 
 re_sender_employer_context13 = re_regards_employer+r' ((\w+) ){0,2}from _entity_'
 
 re_sender_employer_context14 = re_thanks_employer+r' _name_ _puntuation_ _entity_'
 
-max_ix = 11
+re_sender_employer_context15 = re_regards_employer+r' _name_ _puntuation_ _entity_'
+
+max_ix = 12
 re_sender_employer_context = []
 for ix in range(1,max_ix+1):
 	eval("re_sender_employer_context."+"append"+"(re_sender_employer_context"+str(ix)+")")
@@ -93,7 +98,7 @@ def sender_employer_context_match(input):
 			return output
 	return input
 
-
-input = u" regards _puntuation_ _name_ _title_ _puntuation_ _entity_ _end_ "
+input = u"  regards varadharaja _entity_ _end_  "
 sender_employer_context_match(input)
+
 ##################sms_utility_re_employer.py################
