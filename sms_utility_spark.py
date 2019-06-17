@@ -1101,20 +1101,20 @@ def text_context_json2text_context_entity_wildcard_json(\
 			StringType())('text_entity', target_entity))
 	output_df.cache()
 	if output_json is not None:
-		print('saving the results to '+output_json)
-		os.system(u"""
-			hadoop fs -rm -r temp
-			rm -r temp
-			""")
-		output_df.write.json('temp')
-		os.system(u"""
-			hadoop fs -get temp ./
-			cat temp/* > """+output_json)
+		print('saving output to '+output_json)
 		os.system(u"hadoop fs -rm -r "+output_json)
-		os.system(u"hadoop fs -cp -f temp "+output_json)
+		os.system(u"rm -r "+output_json)
+		os.system(u"rm "+output_json)
+		output_df.write.json(output_json)	
+		os.system(u"hadoop fs -get "+output_json+" ./")
+		output_file_temp = 'temp'\
+			+str(random.randint(0, 10000000000))\
+			.zfill(10)
+		os.system(u"mv "+output_json+" "+output_file_temp)
+		os.system(u"cat "+output_file_temp+"/* > "+output_json)
+		os.system(u"rm -r "+output_file_temp)
 		print('results saved to '+output_json)
 	return output_df
-
 
 '''
 replace the entities in the context of indicators
