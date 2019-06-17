@@ -40,12 +40,12 @@ re_sender_employer_context4 = r' '\
 	+re_i_employer+r' '\
 	+re_be_employer+r' '\
 	+r'((\w+) ){0,2}'\
-	+'from _entity_ '
+	+'from ((\w+) ){0,2}_entity_ '
 
 re_sender_employer_context5 = r' '\
 	+re_am_employer+r' '\
 	+r'((\w+) ){0,2}'\
-	+'from _entity_ '
+	+'from ((\w+) ){0,2}_entity_ '
 
 re_sender_employer_context6 = r' _name_ '\
 	+'from _entity_ here '
@@ -53,7 +53,7 @@ re_sender_employer_context6 = r' _name_ '\
 re_sender_employer_context7 = r' here from _entity_ '
 
 # by Haoran from number 8
-re_sender_employer_context8 = r'_name_ from _entity_'
+re_sender_employer_context8 = r' (am|m) _name_ from _entity_'
 
 re_sender_employer_context9 = r'this is ((\w+) ){0,2}of _entity_'
 
@@ -63,13 +63,20 @@ re_sender_employer_context11 = re_regards_employer+r' _puntuation_ _name_ _title
 
 re_sender_employer_context12 = re_regards_employer+r' _name_ _puntuation_ _entity_'
 
-re_sender_employer_context13 = re_regards_employer+r' ((\w+) ){0,2}from _entity_'
+re_sender_employer_context13 = r' '\
+	+re_i_employer+r' '\
+	+re_be_employer+r' '\
+	+r'_name_ '\
+	+r'((\w+) ){0,2}'\
+	+'_entity_ '
 
 re_sender_employer_context14 = re_thanks_employer+r' _name_ _puntuation_ _entity_'
 
 re_sender_employer_context15 = re_thanks_employer+r' _name_ from _entity_'
 
-max_ix = 12
+re_sender_employer_context16 = re_regards_employer+r' ((\w+) ){0,2}from _entity_'
+
+max_ix = 13
 re_sender_employer_context = []
 for ix in range(1,max_ix+1):
 	eval("re_sender_employer_context."+"append"+"(re_sender_employer_context"+str(ix)+")")
@@ -85,8 +92,6 @@ def sender_employer_context_match(input):
 			return output
 	return input
 
-'''
-input = u" jim here from _entity_ "
+input = u"  this is _name_ _entity_ "
 sender_employer_context_match(input)
-'''
 ##################sms_utility_re_employer.py################
