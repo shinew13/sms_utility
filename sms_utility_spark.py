@@ -1983,6 +1983,14 @@ def prepare_entity_dl_input(input_file,\
 		output_df = text_entity2text_single_entity(input_df,\
 			target_entity_type = 'entity',\
 			sqlContext = sqlContext)
+	#####there is a problem of input and output doesn not match
+	#output match the previouse input
+	output_df.registerTempTable('xxx')
+	sqlContext.sql(u"""
+		SELECT COUNT(*)
+		FROM xxx
+		WHERE label = 1
+		""").show()
 	output_df.cache()
 	output_df.registerTempTable('output_df')
 	output_df = sqlContext.sql(u"""
@@ -2011,6 +2019,12 @@ def prepare_entity_dl_input(input_file,\
 			WHERE text_entity IS NOT NULL  
 			AND entity IS NOT NULL
 			""").drop('context_word_idx')
+	output_df.registerTempTable('xxx')
+	sqlContext.sql(u"""
+		SELECT COUNT(*)
+		FROM xxx
+		WHERE label = 1
+		""").show()
 	if output_file is not None:
 		print('saving results to '+output_file)
 		output_file_temp1 = 'temp'+str(random.randint(0, 10000000000))\
@@ -2023,7 +2037,7 @@ def prepare_entity_dl_input(input_file,\
 		os.system(u"hadoop fs -get "+output_file_temp1+u" ./")
 		os.system(u"mv "+output_file+u" "+output_file_temp1)
 		os.system(u"cat "+output_file_temp1+u"/*> "+output_file)
-		os.system(u"rm -r"+output_file_temp1)
+		os.system(u"rm -r "+output_file_temp1)
 		print('results saved to '+output_file)
 	os.system(u"hadoop fs -rm -r "+context_temp)
 	os.system(u"rm -r "+context_temp)
