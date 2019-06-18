@@ -32,7 +32,8 @@ re_sender_employer_context1 = r' ' \
 re_sender_employer_context2 = r' ' \
                       + re_my_employer + r' ' \
                       + re_company_employer + r' ' \
-                      + re_be_employer + r' ' \
+                      + r'(name )*'\
+                      + r'('+re_be_employer + r' )*' \
                       + '_entity_ '
 
 re_sender_employer_context3 = r' ' \
@@ -135,7 +136,7 @@ def sender_employer_context_match(input):
     return input
 
 
-input = u""" i am working from _entity_ """
+input = u""" my company name _entity_ """
 print(sender_employer_context_match(input))
 
 ##################sms_utility_re_employer.py################
