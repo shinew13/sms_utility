@@ -6,7 +6,7 @@ re_i_employer = r'(i|we|this)'
 
 re_my_employer = r'(my|our)'
 
-re_work_employer = r'(work|am working|are working)'
+re_work_employer = r'(work|am working|are working|worked|am employed by|_puntuation_ m employed by|have beeing working)'
 
 re_in_employer = r'(at|in|with|for|from)'
 
@@ -90,13 +90,12 @@ re_sender_employer_context14 = r' my (office|boss|colleague|work) (at|in|of|for)
 re_sender_employer_context15 = r' my _entity_ _puntuation_ s (office|boss|colleague|work) '
 
 re_sender_employer_context16 = r' '\
-	+re_regards_employer \
-	+ r' ((\w+) ){0,2}from _entity_ _end_'
+  +re_regards_employer \
+  + r' ((\w+) ){0,2}from _entity_ _end_'
 
 re_sender_employer_context17 = r' '+re_regards_employer + r' _name_ _puntuation_ _entity_ '
 
-re_sender_employer_context18 = r' '+re_regards_employer + r' _name_ from ((\w+) ){0,2}regarding _entity_ ' 
-# todo  _name_ from LOCATION_NAME regarding [adib]
+re_sender_employer_context18 = r' '+re_regards_employer + r' _name_ from ((\w+) ){0,2}regarding _entity_ '
 
 re_sender_employer_context19 = r' '+re_email_ending_employer+' _puntuation_ _name_ _entity_ '
 
@@ -118,8 +117,43 @@ re_sender_employer_context27 = r' '+re_email_ending_employer + r' _name_ from _e
 
 re_sender_employer_context28 = r' '+re_thanks_employer + r' _name_ _puntuation_ this _name_ from _entity_ '
 
+# todo test later
+# and thanks _name_ from _name_ regarding _entity_ _end_ todo doesn't work
+re_sender_employer_context29 = r' '+re_email_ending_employer + r' _name_ from _name_ regarding _entity_ _end_'
+
+re_sender_employer_context30 = r' '+re_email_ending_employer + r' _puntuation_ _name_ _entity_ _puntuation_ _end_'
+
+# thanks and regards jugjot from [adib] _puntuation_ _end_
+re_sender_employer_context31 = r' '+re_email_ending_employer + r' ((\w+) ){0,2} from _entity_ _puntuation_ _end_'
+
+# Thanks - Aasim Warsi from Noor bank
+re_sender_employer_context32 = r' '+re_email_ending_employer + r' _puntuation_ ((\w+) ){0,2}from _entity_ '
+
+# rate _puntuation_ thanks _name_ scaria [mashreq bank] mob _number_ _puntuation_ _end_
+re_sender_employer_context33 = r' '+re_email_ending_employer + r' ((\w+) ){0,2}_entity_ mob _number_ _puntuation_ _end_'
+
+# thanks _name_ _puntuation_ [abu dhabi commercial bank] _puntuation_ adcb _puntuation_ _number_ _end_
+re_sender_employer_context38 = r' '+re_email_ending_employer + r' _name_ (_puntuation_ ){0,2}_entity_ '
+
+# i am _name_ called you from [abu dhabi islamic bank] regarding credit cards
+re_sender_employer_context35 = r' i am _name_ called you from _entity_ '
+
+# training tomorrow as agreed _puntuation_ thanks _puntuation_ _puntuation_ _name_ of [atana hotel] _end_
+re_sender_employer_context36 = r' '+re_email_ending_employer + r' (_puntuation_ ){0,2}_name_ of _entity_ _end_'
+
+# regards _name_ _puntuation_ night auditor _puntuation_ [capitol hotel] _end_
+re_sender_employer_context37 = r' '+re_email_ending_employer + r' _name_ (_puntuation_ ){0,2}((\w+) ){0,2}(_puntuation_ ){0,2}_entity_ _end_'
+
+
+# TODO regards _name_ global business _title_ [damac] properties _location_ _puntuation_ _end_
+# """Regards
+# Faiza Kanwal
+# Global Business Manager
+# Damac Properties UAE@"""
+# re_sender_employer_context_TODO = r' '+re_email_ending_employer + r' '
+
 # the last re postfix
-max_ix = 28
+max_ix = 37
 re_sender_employer_context = []
 for ix in range(1, max_ix + 1):
     eval("re_sender_employer_context." + "append" + "(re_sender_employer_context" + str(ix) + ")")
@@ -136,7 +170,7 @@ def sender_employer_context_match(input):
     return input
 
 
-input = u""" my company name _entity_ """
+input = u""" i worked for _entity_ """
 print(sender_employer_context_match(input))
 
 ##################sms_utility_re_employer.py################
