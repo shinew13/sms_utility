@@ -335,10 +335,10 @@ def	travel_traveler_sender_match(input):
 '''
 indicators of meeting event
 '''
-re_meet = r'(meet|meeting|mtg|visit|visiting|conversion|visiting|chat|presentation|discussion)'
-re_see = r'(see|meet|met|visit)'
-re_dinner = r'(dinner|lunch|tea|tea time)'
-re_talk = r'(talk|speak|spoke|talking|discussed|discuss)'
+re_meet = r'(meet|meeting|mtg|visit|visiting|conversion|visiting|chat|presentation|discussion|met|appointment with|date with|dating with|appt|appointment)'
+re_see = r'(see|meet|met|visit|catch up|pay a visit|hangout|relax with|have fun with)'
+re_dinner = r'(dinner|lunch|tea|tea time|brunch|luncheon|tea break|dining|bkfast|bkfst|teatime)'
+re_talk = r'(talk|speak|spoke|talking|discussed|discuss|speaking|conversion with|chat|chatter|gossip with|)'
 
 re_meeting_all = r'('\
 	+re_meet+r'|'\
