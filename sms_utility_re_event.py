@@ -335,7 +335,7 @@ def	travel_traveler_sender_match(input):
 '''
 indicators of meeting event
 '''
-re_meet = r'(meet|meeting|visit|visiting|conversion|visiting|chat|presentation|discussion)'
+re_meet = r'(meet|meeting|mtg|visit|visiting|conversion|visiting|chat|presentation|discussion)'
 re_see = r'(see|meet|met|visit)'
 re_dinner = r'(dinner|lunch|tea|tea time)'
 re_talk = r'(talk|speak|spoke|talking|discussed|discuss)'
@@ -349,7 +349,7 @@ sender in the meeting
 
 from sms_utility_re_event import *
 
-input = u" i see it "
+input = u" my mtg "
 meeting_sender_attend_match(input)
 
 input = u" _start_ still in a meeting with "
