@@ -133,7 +133,7 @@ re_sender_employer_context32 = r' '+re_email_ending_employer + r' _puntuation_ (
 re_sender_employer_context33 = r' '+re_email_ending_employer + r' ((\w+) ){0,2}_entity_ mob _number_ _puntuation_ _end_'
 
 # thanks _name_ _puntuation_ [abu dhabi commercial bank] _puntuation_ adcb _puntuation_ _number_ _end_
-re_sender_employer_context38 = r' '+re_email_ending_employer + r' _name_ (_puntuation_ ){0,2}_entity_ '
+re_sender_employer_context34 = r' '+re_email_ending_employer + r' _name_ (_puntuation_ ){0,2}_entity_ '
 
 # i am _name_ called you from [abu dhabi islamic bank] regarding credit cards
 re_sender_employer_context35 = r' i am _name_ called you from _entity_ '
