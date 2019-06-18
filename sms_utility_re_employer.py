@@ -8,7 +8,7 @@ re_my_employer = r'(my|our)'
 
 re_work_employer = r'(work|am working|are working)'
 
-re_in_employer = r'(at|in|with|for)'
+re_in_employer = r'(at|in|with|for|from)'
 
 re_company_employer = r'(company|employer|institute)'
 
@@ -135,7 +135,7 @@ def sender_employer_context_match(input):
     return input
 
 
-input = u""" this _name_ from _entity_ xxx """
+input = u""" i am working from _entity_ """
 print(sender_employer_context_match(input))
 
 ##################sms_utility_re_employer.py################
